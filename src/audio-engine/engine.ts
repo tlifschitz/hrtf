@@ -2,10 +2,11 @@ import { AudioMode } from './modes.ts';
 import { ConvolverPair } from './convolver-pair.ts';
 import {
   loadHrirDataset,
+  loadSubjectList,
   findClosestEntry,
   createStereoBuffer,
 } from '../hrir/hrir-loader.ts';
-import type { HrirDataset } from '../hrir/types.ts';
+import type { HrirDataset, SubjectInfo } from '../hrir/types.ts';
 
 export type EngineStatus = 'loading' | 'ready' | 'playing' | 'error';
 export type StatusCallback = (status: EngineStatus, detail?: string) => void;
@@ -23,45 +24,57 @@ export class AudioEngine {
 
   private _mode: AudioMode = AudioMode.Mono;
   private _azimuth = 0;
+  private _elevation = 0;
   private _playing = false;
   private onStatus: StatusCallback = () => {};
 
+  private subjects: SubjectInfo[] = [];
+  private hrirBaseUrl = './hrir';
+
   async init(
     audioUrl: string,
-    hrirUrl: string,
+    hrirBaseUrl: string,
     onStatus: StatusCallback,
-  ): Promise<void> {
+  ): Promise<SubjectInfo[]> {
     this.onStatus = onStatus;
+    this.hrirBaseUrl = hrirBaseUrl;
     this.onStatus('loading');
 
     try {
       this.ctx = new AudioContext();
 
-      // Load worklet, audio file, and HRIR data in parallel
-      const [, audioBuffer, hrirDataset] = await Promise.all([
+      // Load worklet, audio file, and subject manifest in parallel
+      const [, audioBuffer, subjects] = await Promise.all([
         this.ctx.audioWorklet.addModule(workletUrl),
         this.loadAudio(audioUrl),
-        loadHrirDataset(hrirUrl),
+        loadSubjectList(`${hrirBaseUrl}/subjects.json`),
       ]);
 
       this.sourceBuffer = audioBuffer;
-      this.hrirDataset = hrirDataset;
+      this.subjects = subjects;
 
       // Create nodes
       this.workletNode = new AudioWorkletNode(this.ctx, 'passthrough-processor');
       this.stereoPanner = this.ctx.createStereoPanner();
       this.convolverPair = new ConvolverPair(this.ctx);
 
-      // Set initial HRIR buffer
-      const entry = findClosestEntry(this.hrirDataset, 0);
-      const irBuffer = createStereoBuffer(this.ctx, entry, this.hrirDataset.sampleRate);
-      this.convolverPair.setBuffer(irBuffer);
+      // Load default subject (first in manifest)
+      if (subjects.length > 0) {
+        await this.loadSubjectData(subjects[0]);
+      }
 
       this.onStatus('ready');
+      return this.subjects;
     } catch (err) {
       this.onStatus('error', (err as Error).message);
       throw err;
     }
+  }
+
+  private async loadSubjectData(subject: SubjectInfo): Promise<void> {
+    const url = `${this.hrirBaseUrl}/${subject.file}`;
+    this.hrirDataset = await loadHrirDataset(url);
+    this.updateHrir();
   }
 
   private async loadAudio(url: string): Promise<AudioBuffer> {
@@ -69,6 +82,13 @@ export class AudioEngine {
     if (!response.ok) throw new Error(`Failed to load audio: ${response.status}`);
     const arrayBuffer = await response.arrayBuffer();
     return this.ctx.decodeAudioData(arrayBuffer);
+  }
+
+  private async updateHrir(): Promise<void> {
+    if (!this.hrirDataset) return;
+    const entry = findClosestEntry(this.hrirDataset, this._azimuth, this._elevation);
+    const irBuffer = await createStereoBuffer(this.ctx, entry, this.hrirDataset.sampleRate);
+    this.convolverPair.setBuffer(irBuffer);
   }
 
   private connectGraph(): void {
@@ -139,10 +159,28 @@ export class AudioEngine {
       this.stereoPanner.pan.value = degrees / 80;
     }
 
-    if (this._mode === AudioMode.Binaural && this.hrirDataset) {
-      const entry = findClosestEntry(this.hrirDataset, degrees);
-      const irBuffer = createStereoBuffer(this.ctx, entry, this.hrirDataset.sampleRate);
-      this.convolverPair.setBuffer(irBuffer);
+    if (this._mode === AudioMode.Binaural) {
+      void this.updateHrir();
     }
+  }
+
+  setElevation(degrees: number): void {
+    this._elevation = degrees;
+
+    if (this._mode === AudioMode.Binaural) {
+      void this.updateHrir();
+    }
+  }
+
+  async setSubject(subjectId: string): Promise<void> {
+    const subject = this.subjects.find((s) => s.id === subjectId);
+    if (!subject) throw new Error(`Unknown subject: ${subjectId}`);
+
+    const prevStatus = this._playing ? 'playing' : 'ready';
+    this.onStatus('loading', `Loading ${subject.label}…`);
+
+    await this.loadSubjectData(subject);
+
+    this.onStatus(prevStatus as EngineStatus);
   }
 }

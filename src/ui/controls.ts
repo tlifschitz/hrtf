@@ -1,6 +1,7 @@
 import { AudioEngine } from '../audio-engine/engine.ts';
 import { AudioMode } from '../audio-engine/modes.ts';
 import type { EngineStatus } from '../audio-engine/engine.ts';
+import type { SubjectInfo } from '../hrir/types.ts';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
@@ -9,13 +10,16 @@ export function initControls(engine: AudioEngine): void {
   const modeRadios = document.querySelectorAll<HTMLInputElement>('input[name="mode"]');
   const azimuthSlider = $<HTMLInputElement>('#azimuth-slider');
   const azimuthValue = $<HTMLSpanElement>('#azimuth-value');
+  const elevationSlider = $<HTMLInputElement>('#elevation-slider');
+  const elevationValue = $<HTMLSpanElement>('#elevation-value');
+  const subjectSelect = $<HTMLSelectElement>('#subject-select');
   const statusEl = $<HTMLDivElement>('#status');
   const controlsEl = $<HTMLDivElement>('#controls');
 
   function updateStatus(status: EngineStatus, detail?: string): void {
     statusEl.classList.toggle('error', status === 'error');
     const labels: Record<EngineStatus, string> = {
-      loading: 'Loading…',
+      loading: detail ?? 'Loading…',
       ready: 'Ready',
       playing: 'Playing',
       error: `Error: ${detail ?? 'unknown'}`,
@@ -27,9 +31,20 @@ export function initControls(engine: AudioEngine): void {
     }
   }
 
+  function populateSubjects(subjects: SubjectInfo[]): void {
+    subjectSelect.innerHTML = '';
+    for (const s of subjects) {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.label;
+      subjectSelect.appendChild(opt);
+    }
+  }
+
   // Initialize engine
   void engine
-    .init('./audio/sample.wav', './hrir/hrir-data.json', updateStatus)
+    .init('./audio/sample.wav', './hrir', updateStatus)
+    .then((subjects) => populateSubjects(subjects))
     .catch(() => {});
 
   // Play / Pause
@@ -57,5 +72,17 @@ export function initControls(engine: AudioEngine): void {
     const deg = Number(azimuthSlider.value);
     azimuthValue.textContent = `${deg}°`;
     engine.setAzimuth(deg);
+  });
+
+  // Elevation slider
+  elevationSlider.addEventListener('input', () => {
+    const deg = Number(elevationSlider.value);
+    elevationValue.textContent = `${Math.round(deg)}°`;
+    engine.setElevation(deg);
+  });
+
+  // Subject selector
+  subjectSelect.addEventListener('change', () => {
+    void engine.setSubject(subjectSelect.value);
   });
 }

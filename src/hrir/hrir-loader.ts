@@ -1,40 +1,64 @@
-import type { HrirDataset, HrirEntry } from './types.ts';
-
-let cachedDataset: HrirDataset | null = null;
+import type { HrirDataset, HrirEntry, SubjectInfo } from './types.ts';
 
 export async function loadHrirDataset(url: string): Promise<HrirDataset> {
-  if (cachedDataset) return cachedDataset;
-
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load HRIR data: ${response.status}`);
-
-  const dataset: HrirDataset = await response.json();
-  cachedDataset = dataset;
-  return dataset;
+  return response.json();
 }
 
-export function findClosestEntry(dataset: HrirDataset, azimuth: number): HrirEntry {
+export async function loadSubjectList(url: string): Promise<SubjectInfo[]> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to load subject list: ${response.status}`);
+  return response.json();
+}
+
+export function findClosestEntry(
+  dataset: HrirDataset,
+  azimuth: number,
+  elevation: number,
+): HrirEntry {
   let closest = dataset.entries[0];
-  let minDiff = Math.abs(closest.azimuth - azimuth);
+  let minDist = angularDistance(closest.azimuth, closest.elevation, azimuth, elevation);
 
   for (const entry of dataset.entries) {
-    const diff = Math.abs(entry.azimuth - azimuth);
-    if (diff < minDiff) {
-      minDiff = diff;
+    const dist = angularDistance(entry.azimuth, entry.elevation, azimuth, elevation);
+    if (dist < minDist) {
+      minDist = dist;
       closest = entry;
     }
   }
   return closest;
 }
 
-export function createStereoBuffer(
+function angularDistance(az1: number, el1: number, az2: number, el2: number): number {
+  const dAz = az1 - az2;
+  const dEl = el1 - el2;
+  return dAz * dAz + dEl * dEl;
+}
+
+export async function createStereoBuffer(
   ctx: BaseAudioContext,
   entry: HrirEntry,
   sampleRate: number,
-): AudioBuffer {
+): Promise<AudioBuffer> {
   const length = entry.left.length;
-  const buffer = ctx.createBuffer(2, length, sampleRate);
-  buffer.getChannelData(0).set(new Float32Array(entry.left));
-  buffer.getChannelData(1).set(new Float32Array(entry.right));
-  return buffer;
+
+  if (sampleRate === ctx.sampleRate) {
+    const buffer = ctx.createBuffer(2, length, sampleRate);
+    buffer.getChannelData(0).set(new Float32Array(entry.left));
+    buffer.getChannelData(1).set(new Float32Array(entry.right));
+    return buffer;
+  }
+
+  // Resample via OfflineAudioContext to match the destination sample rate
+  const resampledLength = Math.ceil(length * ctx.sampleRate / sampleRate);
+  const offline = new OfflineAudioContext(2, resampledLength, ctx.sampleRate);
+  const source = offline.createBufferSource();
+  const srcBuffer = offline.createBuffer(2, length, sampleRate);
+  srcBuffer.getChannelData(0).set(new Float32Array(entry.left));
+  srcBuffer.getChannelData(1).set(new Float32Array(entry.right));
+  source.buffer = srcBuffer;
+  source.connect(offline.destination);
+  source.start();
+  return offline.startRendering();
 }

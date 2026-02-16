@@ -13,6 +13,11 @@
       <div id="controls" class="hidden">
         <button id="play-btn" type="button">▶ Play</button>
 
+        <div id="subject-group">
+          <label for="subject-select">HRTF Subject:</label>
+          <select id="subject-select"></select>
+        </div>
+
         <fieldset id="mode-selector">
           <legend>Mode</legend>
           <label><input type="radio" name="mode" value="mono" checked /> Mono</label>
@@ -23,6 +28,11 @@
         <div id="azimuth-group">
           <label for="azimuth-slider">Azimuth: <span id="azimuth-value">0°</span></label>
           <input id="azimuth-slider" type="range" min="-80" max="80" value="0" step="1" />
+        </div>
+
+        <div id="elevation-group">
+          <label for="elevation-slider">Elevation: <span id="elevation-value">0°</span></label>
+          <input id="elevation-slider" type="range" min="-45" max="230.625" value="0" step="5.625" />
         </div>
       </div>
     </div>

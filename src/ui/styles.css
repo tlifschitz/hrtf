@@ -89,18 +89,38 @@ label {
   gap: 0.35rem;
 }
 
-#azimuth-group {
+#subject-group {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-#azimuth-slider {
+#subject-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #16213e;
+  color: #e0e0e0;
+  cursor: pointer;
+}
+
+#azimuth-group,
+#elevation-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+#azimuth-slider,
+#elevation-slider {
   width: 100%;
   accent-color: #00d4ff;
 }
 
-#azimuth-value {
+#azimuth-value,
+#elevation-value {
   color: #00d4ff;
   font-weight: 600;
 }
