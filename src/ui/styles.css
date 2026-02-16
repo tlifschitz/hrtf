@@ -12,7 +12,13 @@ body {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  padding: 2rem;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  body {
+    padding: 2rem;
+  }
 }
 
 #app {
@@ -23,21 +29,45 @@ body {
 #layout {
   display: grid;
   grid-template-columns: 1fr;
+  grid-template-areas:
+    "scene"
+    "controls"
+    "plots";
   gap: 1.5rem;
 }
 
 @media (min-width: 768px) {
   #layout {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "scene controls"
+      "plots plots";
+  }
+}
+
+@media (min-width: 1024px) {
+  #layout {
     grid-template-columns: 1.5fr 1fr;
+    grid-template-areas:
+      "scene controls"
+      "scene plots";
   }
 }
 
 #scene-container {
+  grid-area: scene;
   position: relative;
   aspect-ratio: 4 / 3;
   border-radius: 8px;
   background: #16213e;
   overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  #scene-container {
+    aspect-ratio: auto;
+    min-height: 400px;
+  }
 }
 
 #tracking-video {
@@ -73,7 +103,32 @@ h1 {
   display: none !important;
 }
 
+/* Fade-in animation for controls */
+.fade-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+/* Tracking video/status fade */
+#tracking-video,
+#tracking-status {
+  transition: opacity 0.3s ease;
+}
+
+#tracking-video.fade-hidden,
+#tracking-status.fade-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 #controls {
+  grid-area: controls;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -104,6 +159,10 @@ fieldset {
   padding: 0.75rem 1rem;
   display: flex;
   gap: 1rem;
+}
+
+fieldset label {
+  min-height: 44px;
 }
 
 legend {
@@ -137,6 +196,7 @@ label {
   background: #16213e;
   color: #e0e0e0;
   cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 
 #azimuth-group,
@@ -187,7 +247,7 @@ label {
 
 /* Plots panel */
 #plots-panel {
-  grid-column: 1 / -1;
+  grid-area: plots;
   background: #16213e;
   border-radius: 8px;
   padding: 1rem;
@@ -228,4 +288,133 @@ label {
 .edu-tab-pane canvas {
   width: 100% !important;
   height: 100% !important;
+}
+
+/* Tooltips */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 250px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: #0f3460;
+  color: #e0e0e0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+}
+
+[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #0f3460;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before,
+[data-tooltip]:focus::after,
+[data-tooltip]:focus::before {
+  opacity: 1;
+}
+
+/* Onboarding */
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.onboarding-spotlight {
+  position: fixed;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
+  transition: left 0.35s ease, top 0.35s ease, width 0.35s ease, height 0.35s ease;
+  z-index: 1001;
+}
+
+.onboarding-card {
+  position: fixed;
+  width: 320px;
+  padding: 1.25rem;
+  border-radius: 10px;
+  background: #16213e;
+  border: 1px solid #00d4ff33;
+  color: #e0e0e0;
+  z-index: 1002;
+  transition: left 0.35s ease, top 0.35s ease, bottom 0.35s ease;
+}
+
+.onboarding-step-counter {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-bottom: 0.25rem;
+}
+
+.onboarding-title {
+  font-size: 1rem;
+  color: #00d4ff;
+  margin-bottom: 0.5rem;
+}
+
+.onboarding-message {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.onboarding-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.onboarding-skip {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.onboarding-next {
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #00d4ff;
+  color: #1a1a2e;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.onboarding-skip:hover {
+  background: #0f3460;
+  color: #e0e0e0;
+}
+
+.onboarding-next:hover {
+  background: #33dfff;
 }

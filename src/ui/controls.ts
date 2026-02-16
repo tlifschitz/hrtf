@@ -8,7 +8,25 @@ import type { SceneManager } from '../visualization/index.ts';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
-export function initControls(engine: AudioEngine, scene: SceneManager): void {
+function fadeIn(el: HTMLElement): void {
+  el.classList.remove('hidden');
+  el.classList.add('fade-enter');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.classList.add('fade-enter-active');
+      el.classList.remove('fade-enter');
+      el.addEventListener('transitionend', () => {
+        el.classList.remove('fade-enter-active');
+      }, { once: true });
+    });
+  });
+}
+
+export function initControls(
+  engine: AudioEngine,
+  scene: SceneManager,
+  onReady?: () => void,
+): void {
   const playBtn = $<HTMLButtonElement>('#play-btn');
   const modeRadios = document.querySelectorAll<HTMLInputElement>('input[name="mode"]');
   const azimuthSlider = $<HTMLInputElement>('#azimuth-slider');
@@ -49,7 +67,10 @@ export function initControls(engine: AudioEngine, scene: SceneManager): void {
     statusEl.textContent = labels[status];
 
     if (status === 'ready' || status === 'playing') {
-      controlsEl.classList.remove('hidden');
+      if (controlsEl.classList.contains('hidden')) {
+        fadeIn(controlsEl);
+        onReady?.();
+      }
     }
   }
 
@@ -151,7 +172,9 @@ export function initControls(engine: AudioEngine, scene: SceneManager): void {
       trackingBtn.textContent = 'Enable Head Tracking';
       trackingBtn.classList.remove('active');
       trackingVideo.classList.add('hidden');
+      trackingVideo.classList.remove('fade-hidden');
       trackingStatus.classList.add('hidden');
+      trackingStatus.classList.remove('fade-hidden');
 
       headYaw = 0;
       headPitch = 0;
@@ -181,8 +204,8 @@ export function initControls(engine: AudioEngine, scene: SceneManager): void {
       trackingActive = true;
       trackingBtn.textContent = 'Disable Head Tracking';
       trackingBtn.classList.add('active');
-      trackingVideo.classList.remove('hidden');
-      trackingStatus.classList.remove('hidden');
+      fadeIn(trackingVideo);
+      fadeIn(trackingStatus);
     } catch (err) {
       trackingBtn.disabled = false;
       trackingBtn.textContent = 'Enable Head Tracking';
