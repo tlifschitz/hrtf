@@ -2,10 +2,11 @@ import { AudioEngine, AUDIO_SOURCES } from '../audio-engine/engine.ts';
 import { AudioMode } from '../audio-engine/modes.ts';
 import type { EngineStatus } from '../audio-engine/engine.ts';
 import type { SubjectInfo } from '../hrir/types.ts';
+import type { SceneManager } from '../visualization/index.ts';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
-export function initControls(engine: AudioEngine): void {
+export function initControls(engine: AudioEngine, scene: SceneManager): void {
   const playBtn = $<HTMLButtonElement>('#play-btn');
   const modeRadios = document.querySelectorAll<HTMLInputElement>('input[name="mode"]');
   const azimuthSlider = $<HTMLInputElement>('#azimuth-slider');
@@ -81,19 +82,27 @@ export function initControls(engine: AudioEngine): void {
     void engine.setSource(sourceSelect.value);
   });
 
+  let currentAzimuth = 0;
+  let currentElevation = 0;
+
   // Azimuth slider
   azimuthSlider.addEventListener('input', () => {
-    const deg = Number(azimuthSlider.value);
-    azimuthValue.textContent = `${deg}°`;
-    engine.setAzimuth(deg);
+    currentAzimuth = Number(azimuthSlider.value);
+    azimuthValue.textContent = `${currentAzimuth}°`;
+    engine.setAzimuth(currentAzimuth);
+    scene.setSourcePosition(currentAzimuth, currentElevation);
   });
 
   // Elevation slider
   elevationSlider.addEventListener('input', () => {
-    const deg = Number(elevationSlider.value);
-    elevationValue.textContent = `${Math.round(deg)}°`;
-    engine.setElevation(deg);
+    currentElevation = Number(elevationSlider.value);
+    elevationValue.textContent = `${Math.round(currentElevation)}°`;
+    engine.setElevation(currentElevation);
+    scene.setSourcePosition(currentAzimuth, currentElevation);
   });
+
+  // Set initial 3D position
+  scene.setSourcePosition(currentAzimuth, currentElevation);
 
   // Subject selector
   subjectSelect.addEventListener('change', () => {

@@ -17,11 +17,14 @@ export function findClosestEntry(
   azimuth: number,
   elevation: number,
 ): HrirEntry {
+  // Normalize azimuth to 0-360 range to match dataset convention
+  const normAz = ((azimuth % 360) + 360) % 360;
+
   let closest = dataset.entries[0];
-  let minDist = angularDistance(closest.azimuth, closest.elevation, azimuth, elevation);
+  let minDist = angularDistance(closest.azimuth, closest.elevation, normAz, elevation);
 
   for (const entry of dataset.entries) {
-    const dist = angularDistance(entry.azimuth, entry.elevation, azimuth, elevation);
+    const dist = angularDistance(entry.azimuth, entry.elevation, normAz, elevation);
     if (dist < minDist) {
       minDist = dist;
       closest = entry;
@@ -31,7 +34,9 @@ export function findClosestEntry(
 }
 
 function angularDistance(az1: number, el1: number, az2: number, el2: number): number {
-  const dAz = az1 - az2;
+  // Handle circular wrap-around for azimuth
+  let dAz = Math.abs(az1 - az2);
+  if (dAz > 180) dAz = 360 - dAz;
   const dEl = el1 - el2;
   return dAz * dAz + dEl * dEl;
 }

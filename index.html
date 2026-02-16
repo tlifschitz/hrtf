@@ -10,36 +10,40 @@
       <h1>Spatial Audio Demo</h1>
       <div id="status">Loading…</div>
 
-      <div id="controls" class="hidden">
-        <button id="play-btn" type="button">▶ Play</button>
+      <main id="layout">
+        <section id="scene-container"></section>
 
-        <div id="source-group">
-          <label for="source-select">Audio source:</label>
-          <select id="source-select"></select>
+        <div id="controls" class="hidden">
+          <button id="play-btn" type="button">▶ Play</button>
+
+          <div id="source-group">
+            <label for="source-select">Audio source:</label>
+            <select id="source-select"></select>
+          </div>
+
+          <div id="subject-group">
+            <label for="subject-select">HRTF Subject:</label>
+            <select id="subject-select"></select>
+          </div>
+
+          <fieldset id="mode-selector">
+            <legend>Mode</legend>
+            <label><input type="radio" name="mode" value="mono" checked /> Mono</label>
+            <label><input type="radio" name="mode" value="stereo" /> Stereo</label>
+            <label><input type="radio" name="mode" value="binaural" /> Binaural</label>
+          </fieldset>
+
+          <div id="azimuth-group">
+            <label for="azimuth-slider">Azimuth: <span id="azimuth-value">0°</span></label>
+            <input id="azimuth-slider" type="range" min="-80" max="80" value="0" step="1" />
+          </div>
+
+          <div id="elevation-group">
+            <label for="elevation-slider">Elevation: <span id="elevation-value">0°</span></label>
+            <input id="elevation-slider" type="range" min="-45" max="230.625" value="0" step="5.625" />
+          </div>
         </div>
-
-        <div id="subject-group">
-          <label for="subject-select">HRTF Subject:</label>
-          <select id="subject-select"></select>
-        </div>
-
-        <fieldset id="mode-selector">
-          <legend>Mode</legend>
-          <label><input type="radio" name="mode" value="mono" checked /> Mono</label>
-          <label><input type="radio" name="mode" value="stereo" /> Stereo</label>
-          <label><input type="radio" name="mode" value="binaural" /> Binaural</label>
-        </fieldset>
-
-        <div id="azimuth-group">
-          <label for="azimuth-slider">Azimuth: <span id="azimuth-value">0°</span></label>
-          <input id="azimuth-slider" type="range" min="-80" max="80" value="0" step="1" />
-        </div>
-
-        <div id="elevation-group">
-          <label for="elevation-slider">Elevation: <span id="elevation-value">0°</span></label>
-          <input id="elevation-slider" type="range" min="-45" max="230.625" value="0" step="5.625" />
-        </div>
-      </div>
+      </main>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -16,8 +16,27 @@ body {
 }
 
 #app {
-  max-width: 480px;
+  max-width: 1200px;
   width: 100%;
+}
+
+#layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  #layout {
+    grid-template-columns: 1.5fr 1fr;
+  }
+}
+
+#scene-container {
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  background: #16213e;
+  overflow: hidden;
 }
 
 h1 {
