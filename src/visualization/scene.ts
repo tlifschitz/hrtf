@@ -82,8 +82,9 @@ export class SceneManager {
     updateDirectionLine(this.directionLine, pos);
   }
 
-  setHeadRotation(yawDeg: number): void {
+  setHeadRotation(yawDeg: number, pitchDeg: number = 0): void {
     this.head.rotation.y = -yawDeg * DEG2RAD;
+    this.head.rotation.x = pitchDeg * DEG2RAD;
   }
 
   dispose(): void {

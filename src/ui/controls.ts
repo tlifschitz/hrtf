@@ -1,5 +1,6 @@
 import { AudioEngine, AUDIO_SOURCES } from '../audio-engine/engine.ts';
 import { AudioMode } from '../audio-engine/modes.ts';
+import { FaceTracker } from '../tracking/index.ts';
 import type { EngineStatus } from '../audio-engine/engine.ts';
 import type { SubjectInfo } from '../hrir/types.ts';
 import type { SceneManager } from '../visualization/index.ts';
@@ -17,6 +18,19 @@ export function initControls(engine: AudioEngine, scene: SceneManager): void {
   const sourceSelect = $<HTMLSelectElement>('#source-select');
   const statusEl = $<HTMLDivElement>('#status');
   const controlsEl = $<HTMLDivElement>('#controls');
+  const trackingBtn = $<HTMLButtonElement>('#tracking-btn');
+  const trackingVideo = $<HTMLVideoElement>('#tracking-video');
+  const trackingStatus = $<HTMLDivElement>('#tracking-status');
+  const trackingYawEl = $<HTMLSpanElement>('#tracking-yaw');
+  const trackingPitchEl = $<HTMLSpanElement>('#tracking-pitch');
+
+  let sourceAzimuth = 0;
+  let sourceElevation = 0;
+  let headYaw = 0;
+  let headPitch = 0;
+
+  let tracker: FaceTracker | null = null;
+  let trackingActive = false;
 
   function updateStatus(status: EngineStatus, detail?: string): void {
     statusEl.classList.toggle('error', status === 'error');
@@ -31,6 +45,20 @@ export function initControls(engine: AudioEngine, scene: SceneManager): void {
     if (status === 'ready' || status === 'playing') {
       controlsEl.classList.remove('hidden');
     }
+  }
+
+  function updateEffectiveAngles(): void {
+    const azMin = Number(azimuthSlider.min);
+    const azMax = Number(azimuthSlider.max);
+    const elMin = Number(elevationSlider.min);
+    const elMax = Number(elevationSlider.max);
+
+    const effectiveAz = Math.max(azMin, Math.min(azMax, sourceAzimuth - headYaw));
+    const effectiveEl = Math.max(elMin, Math.min(elMax, sourceElevation - headPitch));
+
+    engine.setAzimuth(effectiveAz);
+    engine.setElevation(effectiveEl);
+    scene.setSourcePosition(sourceAzimuth, sourceElevation);
   }
 
   function populateSubjects(subjects: SubjectInfo[]): void {
@@ -82,30 +110,75 @@ export function initControls(engine: AudioEngine, scene: SceneManager): void {
     void engine.setSource(sourceSelect.value);
   });
 
-  let currentAzimuth = 0;
-  let currentElevation = 0;
-
   // Azimuth slider
   azimuthSlider.addEventListener('input', () => {
-    currentAzimuth = Number(azimuthSlider.value);
-    azimuthValue.textContent = `${currentAzimuth}°`;
-    engine.setAzimuth(currentAzimuth);
-    scene.setSourcePosition(currentAzimuth, currentElevation);
+    sourceAzimuth = Number(azimuthSlider.value);
+    azimuthValue.textContent = `${sourceAzimuth}°`;
+    updateEffectiveAngles();
   });
 
   // Elevation slider
   elevationSlider.addEventListener('input', () => {
-    currentElevation = Number(elevationSlider.value);
-    elevationValue.textContent = `${Math.round(currentElevation)}°`;
-    engine.setElevation(currentElevation);
-    scene.setSourcePosition(currentAzimuth, currentElevation);
+    sourceElevation = Number(elevationSlider.value);
+    elevationValue.textContent = `${Math.round(sourceElevation)}°`;
+    updateEffectiveAngles();
   });
 
   // Set initial 3D position
-  scene.setSourcePosition(currentAzimuth, currentElevation);
+  scene.setSourcePosition(sourceAzimuth, sourceElevation);
 
   // Subject selector
   subjectSelect.addEventListener('change', () => {
     void engine.setSubject(subjectSelect.value);
+  });
+
+  // Head tracking
+  trackingBtn.addEventListener('click', async () => {
+    if (trackingActive) {
+      // Stop tracking
+      tracker?.stop();
+      trackingActive = false;
+      trackingBtn.textContent = 'Enable Head Tracking';
+      trackingBtn.classList.remove('active');
+      trackingVideo.classList.add('hidden');
+      trackingStatus.classList.add('hidden');
+
+      headYaw = 0;
+      headPitch = 0;
+      scene.setHeadRotation(0, 0);
+      updateEffectiveAngles();
+      return;
+    }
+
+    try {
+      // Lazy-init tracker on first click
+      if (!tracker) {
+        trackingBtn.textContent = 'Loading model…';
+        trackingBtn.disabled = true;
+        tracker = new FaceTracker(trackingVideo, (result) => {
+          headYaw = result.yawDeg;
+          headPitch = result.pitchDeg;
+          trackingYawEl.textContent = `Yaw: ${Math.round(headYaw)}°`;
+          trackingPitchEl.textContent = `Pitch: ${Math.round(headPitch)}°`;
+          scene.setHeadRotation(headYaw, headPitch);
+          updateEffectiveAngles();
+        });
+        await tracker.init();
+        trackingBtn.disabled = false;
+      }
+
+      await tracker.start();
+      trackingActive = true;
+      trackingBtn.textContent = 'Disable Head Tracking';
+      trackingBtn.classList.add('active');
+      trackingVideo.classList.remove('hidden');
+      trackingStatus.classList.remove('hidden');
+    } catch (err) {
+      trackingBtn.disabled = false;
+      trackingBtn.textContent = 'Enable Head Tracking';
+      const msg = err instanceof Error ? err.message : 'Camera access denied';
+      statusEl.textContent = `Tracking error: ${msg}`;
+      statusEl.classList.add('error');
+    }
   });
 }

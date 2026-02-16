@@ -11,7 +11,9 @@
       <div id="status">Loading…</div>
 
       <main id="layout">
-        <section id="scene-container"></section>
+        <section id="scene-container">
+          <video id="tracking-video" autoplay playsinline muted class="hidden"></video>
+        </section>
 
         <div id="controls" class="hidden">
           <button id="play-btn" type="button">▶ Play</button>
@@ -41,6 +43,14 @@
           <div id="elevation-group">
             <label for="elevation-slider">Elevation: <span id="elevation-value">0°</span></label>
             <input id="elevation-slider" type="range" min="-45" max="230.625" value="0" step="5.625" />
+          </div>
+
+          <div id="tracking-group">
+            <button id="tracking-btn" type="button">Enable Head Tracking</button>
+            <div id="tracking-status" class="hidden">
+              <span id="tracking-yaw">Yaw: 0°</span>
+              <span id="tracking-pitch">Pitch: 0°</span>
+            </div>
           </div>
         </div>
       </main>

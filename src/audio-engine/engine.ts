@@ -41,6 +41,8 @@ export class AudioEngine {
   private _elevation = 0;
   private _playing = false;
   private onStatus: StatusCallback = () => {};
+  private updatingHrir = false;
+  private hrirDirty = false;
 
   private subjects: SubjectInfo[] = [];
   private hrirBaseUrl = './hrir';
@@ -99,9 +101,19 @@ export class AudioEngine {
 
   private async updateHrir(): Promise<void> {
     if (!this.hrirDataset) return;
+    if (this.updatingHrir) {
+      this.hrirDirty = true;
+      return;
+    }
+    this.updatingHrir = true;
     const entry = findClosestEntry(this.hrirDataset, this._azimuth, this._elevation);
     const irBuffer = await createStereoBuffer(this.ctx, entry, this.hrirDataset.sampleRate);
     this.convolverPair.setBuffer(irBuffer);
+    this.updatingHrir = false;
+    if (this.hrirDirty) {
+      this.hrirDirty = false;
+      void this.updateHrir();
+    }
   }
 
   private connectGraph(): void {
