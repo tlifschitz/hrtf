@@ -13,6 +13,20 @@ export type StatusCallback = (status: EngineStatus, detail?: string) => void;
 
 import workletUrl from '../worklet/passthrough-processor.js?url';
 
+export interface AudioSource {
+  id: string;
+  label: string;
+  url: string;
+}
+
+export const AUDIO_SOURCES: AudioSource[] = [
+  { id: 'white-noise',  label: 'White noise',      url: './audio/white-noise.wav' },
+  { id: 'pink-noise',   label: 'Pink noise',       url: './audio/pink-noise.wav' },
+  { id: 'brown-noise',  label: 'Brown noise',      url: './audio/brown-noise.wav' },
+  { id: 'real-speech',  label: 'Speech',           url: './audio/a-dream-within-a-dream.wav' },
+  { id: 'synth-speech', label: 'Synthetic Speech', url: './audio/speech.wav' },
+];
+
 export class AudioEngine {
   private ctx!: AudioContext;
   private sourceBuffer: AudioBuffer | null = null;
@@ -32,7 +46,6 @@ export class AudioEngine {
   private hrirBaseUrl = './hrir';
 
   async init(
-    audioUrl: string,
     hrirBaseUrl: string,
     onStatus: StatusCallback,
   ): Promise<SubjectInfo[]> {
@@ -43,10 +56,10 @@ export class AudioEngine {
     try {
       this.ctx = new AudioContext();
 
-      // Load worklet, audio file, and subject manifest in parallel
+      // Load worklet, default audio, and subject manifest in parallel
       const [, audioBuffer, subjects] = await Promise.all([
         this.ctx.audioWorklet.addModule(workletUrl),
-        this.loadAudio(audioUrl),
+        this.loadAudio(AUDIO_SOURCES[0].url),
         loadSubjectList(`${hrirBaseUrl}/subjects.json`),
       ]);
 
@@ -182,5 +195,19 @@ export class AudioEngine {
     await this.loadSubjectData(subject);
 
     this.onStatus(prevStatus as EngineStatus);
+  }
+
+  async setSource(sourceId: string): Promise<void> {
+    const source = AUDIO_SOURCES.find((s) => s.id === sourceId);
+    if (!source) throw new Error(`Unknown source: ${sourceId}`);
+
+    const wasPlaying = this._playing;
+    if (wasPlaying) this.stop();
+
+    this.onStatus('loading', `Loading ${source.label}…`);
+    this.sourceBuffer = await this.loadAudio(source.url);
+    this.onStatus('ready');
+
+    if (wasPlaying) this.play();
   }
 }

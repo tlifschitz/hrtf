@@ -1,4 +1,4 @@
-import { AudioEngine } from '../audio-engine/engine.ts';
+import { AudioEngine, AUDIO_SOURCES } from '../audio-engine/engine.ts';
 import { AudioMode } from '../audio-engine/modes.ts';
 import type { EngineStatus } from '../audio-engine/engine.ts';
 import type { SubjectInfo } from '../hrir/types.ts';
@@ -13,6 +13,7 @@ export function initControls(engine: AudioEngine): void {
   const elevationSlider = $<HTMLInputElement>('#elevation-slider');
   const elevationValue = $<HTMLSpanElement>('#elevation-value');
   const subjectSelect = $<HTMLSelectElement>('#subject-select');
+  const sourceSelect = $<HTMLSelectElement>('#source-select');
   const statusEl = $<HTMLDivElement>('#status');
   const controlsEl = $<HTMLDivElement>('#controls');
 
@@ -41,9 +42,17 @@ export function initControls(engine: AudioEngine): void {
     }
   }
 
+  // Populate audio sources
+  for (const src of AUDIO_SOURCES) {
+    const opt = document.createElement('option');
+    opt.value = src.id;
+    opt.textContent = src.label;
+    sourceSelect.appendChild(opt);
+  }
+
   // Initialize engine
   void engine
-    .init('./audio/sample.wav', './hrir', updateStatus)
+    .init('./hrir', updateStatus)
     .then((subjects) => populateSubjects(subjects))
     .catch(() => {});
 
@@ -65,6 +74,11 @@ export function initControls(engine: AudioEngine): void {
     radio.addEventListener('change', () => {
       engine.setMode(radio.value as AudioMode);
     });
+  });
+
+  // Audio source selector
+  sourceSelect.addEventListener('change', () => {
+    void engine.setSource(sourceSelect.value);
   });
 
   // Azimuth slider

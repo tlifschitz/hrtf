@@ -89,12 +89,14 @@ label {
   gap: 0.35rem;
 }
 
+#source-group,
 #subject-group {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
+#source-select,
 #subject-select {
   width: 100%;
   padding: 0.5rem 0.75rem;
