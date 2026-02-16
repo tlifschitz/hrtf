@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spatial Audio Demo</title>
+  </head>
+  <body>
+    <div id="app">
+      <h1>Spatial Audio Demo</h1>
+      <div id="status">Loading…</div>
+
+      <div id="controls" class="hidden">
+        <button id="play-btn" type="button">▶ Play</button>
+
+        <fieldset id="mode-selector">
+          <legend>Mode</legend>
+          <label><input type="radio" name="mode" value="mono" checked /> Mono</label>
+          <label><input type="radio" name="mode" value="stereo" /> Stereo</label>
+          <label><input type="radio" name="mode" value="binaural" /> Binaural</label>
+        </fieldset>
+
+        <div id="azimuth-group">
+          <label for="azimuth-slider">Azimuth: <span id="azimuth-value">0°</span></label>
+          <input id="azimuth-slider" type="range" min="-80" max="80" value="0" step="1" />
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

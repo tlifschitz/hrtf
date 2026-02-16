@@ -1,0 +1,106 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+#app {
+  max-width: 480px;
+  width: 100%;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: #00d4ff;
+}
+
+#status {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1.5rem;
+  border-radius: 6px;
+  background: #16213e;
+  font-size: 0.9rem;
+}
+
+#status.error {
+  color: #ff6b6b;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+#play-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #0f3460;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#play-btn:hover {
+  background: #1a5276;
+}
+
+#play-btn.playing {
+  background: #c0392b;
+}
+
+fieldset {
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+legend {
+  font-size: 0.85rem;
+  color: #aaa;
+  padding: 0 0.25rem;
+}
+
+label {
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+#azimuth-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+#azimuth-slider {
+  width: 100%;
+  accent-color: #00d4ff;
+}
+
+#azimuth-value {
+  color: #00d4ff;
+  font-weight: 600;
+}
