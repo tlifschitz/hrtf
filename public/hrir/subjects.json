@@ -1,0 +1,27 @@
+[
+  {
+    "id": "003",
+    "label": "Subject 003",
+    "file": "003.json"
+  },
+  {
+    "id": "008",
+    "label": "Subject 008",
+    "file": "008.json"
+  },
+  {
+    "id": "021",
+    "label": "KEMAR Large Pinna (021)",
+    "file": "021.json"
+  },
+  {
+    "id": "040",
+    "label": "Subject 040",
+    "file": "040.json"
+  },
+  {
+    "id": "165",
+    "label": "KEMAR Small Pinna (165)",
+    "file": "165.json"
+  }
+]

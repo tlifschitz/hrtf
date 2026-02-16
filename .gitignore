@@ -27,6 +27,3 @@ scripts/.sofa-cache
 
 # Python virtual environment
 .venv
-
-# Generated HRIR JSON (regenerate with: python3 scripts/convert-cipic-sofa.py)
-public/hrir/*.json
