@@ -6,7 +6,7 @@ import {
   findClosestEntry,
   createStereoBuffer,
 } from '../hrir/hrir-loader.ts';
-import type { HrirDataset, SubjectInfo } from '../hrir/types.ts';
+import type { HrirDataset, HrirEntry, SubjectInfo } from '../hrir/types.ts';
 
 export type EngineStatus = 'loading' | 'ready' | 'playing' | 'error';
 export type StatusCallback = (status: EngineStatus, detail?: string) => void;
@@ -207,6 +207,15 @@ export class AudioEngine {
     await this.loadSubjectData(subject);
 
     this.onStatus(prevStatus as EngineStatus);
+  }
+
+  getCurrentHrirEntry(): HrirEntry | null {
+    if (!this.hrirDataset) return null;
+    return findClosestEntry(this.hrirDataset, this._azimuth, this._elevation);
+  }
+
+  getSampleRate(): number {
+    return this.hrirDataset?.sampleRate ?? 0;
   }
 
   async setSource(sourceId: string): Promise<void> {

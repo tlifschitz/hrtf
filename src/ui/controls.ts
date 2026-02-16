@@ -1,6 +1,7 @@
 import { AudioEngine, AUDIO_SOURCES } from '../audio-engine/engine.ts';
 import { AudioMode } from '../audio-engine/modes.ts';
 import { FaceTracker } from '../tracking/index.ts';
+import { PlotsPanel } from '../plots/index.ts';
 import type { EngineStatus } from '../audio-engine/engine.ts';
 import type { SubjectInfo } from '../hrir/types.ts';
 import type { SceneManager } from '../visualization/index.ts';
@@ -32,6 +33,11 @@ export function initControls(engine: AudioEngine, scene: SceneManager): void {
   let tracker: FaceTracker | null = null;
   let trackingActive = false;
 
+  const plotsPanel = new PlotsPanel(
+    $<HTMLElement>('#plots-panel'),
+    engine,
+  );
+
   function updateStatus(status: EngineStatus, detail?: string): void {
     statusEl.classList.toggle('error', status === 'error');
     const labels: Record<EngineStatus, string> = {
@@ -59,6 +65,7 @@ export function initControls(engine: AudioEngine, scene: SceneManager): void {
     engine.setAzimuth(effectiveAz);
     engine.setElevation(effectiveEl);
     scene.setSourcePosition(sourceAzimuth, sourceElevation);
+    plotsPanel.update();
   }
 
   function populateSubjects(subjects: SubjectInfo[]): void {
@@ -82,7 +89,10 @@ export function initControls(engine: AudioEngine, scene: SceneManager): void {
   // Initialize engine
   void engine
     .init('./hrir', updateStatus)
-    .then((subjects) => populateSubjects(subjects))
+    .then((subjects) => {
+      populateSubjects(subjects);
+      plotsPanel.update();
+    })
     .catch(() => {});
 
   // Play / Pause
@@ -129,7 +139,7 @@ export function initControls(engine: AudioEngine, scene: SceneManager): void {
 
   // Subject selector
   subjectSelect.addEventListener('change', () => {
-    void engine.setSubject(subjectSelect.value);
+    void engine.setSubject(subjectSelect.value).then(() => plotsPanel.update());
   });
 
   // Head tracking
