@@ -170,6 +170,26 @@ export class AudioEngine {
     return this._playing;
   }
 
+  get audioCtx(): AudioContext {
+    return this.ctx;
+  }
+
+  playBuffer(buffer: AudioBuffer): Promise<void> {
+    return new Promise((resolve) => {
+      void this.ctx.resume();
+      const node = this.ctx.createBufferSource();
+      node.buffer = buffer;
+      node.loop = false;
+      node.connect(this.workletNode);
+      this.connectGraph();
+      node.onended = () => {
+        node.disconnect();
+        resolve();
+      };
+      node.start();
+    });
+  }
+
   setMode(mode: AudioMode): void {
     this._mode = mode;
     if (this._playing) {

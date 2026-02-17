@@ -1,133 +1,151 @@
+import { AudioEngine } from '../audio-engine/engine.ts';
+import { AudioMode } from '../audio-engine/modes.ts';
+import { FaceTracker } from '../tracking/index.ts';
+import type { SceneManager } from '../visualization/index.ts';
+
 const STORAGE_KEY = 'hrtf-lab-onboarding-seen';
 
-interface Step {
-  target: string;
-  title: string;
-  message: string;
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
-const STEPS: Step[] = [
+function show(el: HTMLElement): void {
+  el.classList.remove('hidden', 'ob-hide');
+  el.classList.add('fade-enter');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.classList.add('fade-enter-active');
+      el.classList.remove('fade-enter');
+      el.addEventListener('transitionend', () => {
+        el.classList.remove('fade-enter-active');
+      }, { once: true });
+    });
+  });
+}
+
+interface Segment {
+  mode: AudioMode;
+  animFn: (elapsed: number, dur: number) => { az: number; el: number };
+}
+
+const SEGMENTS: Segment[] = [
   {
-    target: '#scene-container',
-    title: '3D Scene',
-    message:
-      'This 3D scene shows a sound source around a head. Its position determines what you hear.',
+    mode: AudioMode.Mono,
+    animFn: (t) => ({ az: 70 * Math.sin((2 * Math.PI * t) / 8000), el: 0 }),
   },
   {
-    target: '#mode-selector',
-    title: 'Audio Modes',
-    message:
-      'Switch between Mono, Stereo, and Binaural to hear the difference spatial audio makes.',
+    mode: AudioMode.Stereo,
+    animFn: (t) => ({ az: 75 * Math.sin((2 * Math.PI * t) / 3000), el: 0 }),
   },
   {
-    target: '#azimuth-group',
-    title: 'Move the Source',
-    message:
-      'Drag the sliders to move the sound source. Notice how the audio changes.',
+    mode: AudioMode.Binaural,
+    animFn: (t) => ({
+      az: 80 * Math.sin((2 * Math.PI * t) / 6000),
+      el: 30 * Math.sin((2 * Math.PI * t) / 4000),
+    }),
   },
   {
-    target: '#tracking-btn',
-    title: 'Head Tracking',
-    message:
-      'Enable head tracking to use your webcam. Turn your head and the audio follows!',
+    mode: AudioMode.Binaural,
+    animFn: (t) => ({
+      az: 80 * Math.sin((2 * Math.PI * t) / 5000 + 1.5),
+      el: 40 * Math.sin((2 * Math.PI * t) / 3500),
+    }),
+  },
+  {
+    mode: AudioMode.Binaural,
+    animFn: (t, dur) => ({
+      az: 70 * Math.sin((2 * Math.PI * t) / 4000) * (1 - t / dur),
+      el: 0,
+    }),
   },
 ];
 
-let overlay: HTMLDivElement | null = null;
-let spotlight: HTMLDivElement | null = null;
-let card: HTMLDivElement | null = null;
-let currentStep = 0;
+export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
+  // Step A: Hide non-scene UI immediately (synchronous, before any paint)
+  const controlsEl = document.querySelector<HTMLElement>('#controls')!;
+  const plotsPanel = document.querySelector<HTMLElement>('#plots-panel')!;
+  const h1El = document.querySelector<HTMLElement>('h1')!;
+  const statusEl = document.querySelector<HTMLElement>('#status')!;
+  const sceneContainer = document.querySelector<HTMLElement>('#scene-container')!;
 
-function createElements(): void {
-  overlay = document.createElement('div');
-  overlay.className = 'onboarding-overlay';
+  controlsEl.classList.add('hidden');
+  plotsPanel.classList.add('ob-hide');
+  h1El.classList.add('ob-hide');
+  statusEl.classList.add('ob-hide');
+  sceneContainer.classList.add('ob-fullscreen');
 
-  spotlight = document.createElement('div');
-  spotlight.className = 'onboarding-spotlight';
-
-  card = document.createElement('div');
-  card.className = 'onboarding-card';
-
-  overlay.appendChild(spotlight);
-  overlay.appendChild(card);
-  document.body.appendChild(overlay);
-}
-
-function positionSpotlight(el: HTMLElement): void {
-  const rect = el.getBoundingClientRect();
-  const pad = 8;
-  spotlight!.style.left = `${rect.left - pad}px`;
-  spotlight!.style.top = `${rect.top - pad}px`;
-  spotlight!.style.width = `${rect.width + pad * 2}px`;
-  spotlight!.style.height = `${rect.height + pad * 2}px`;
-}
-
-function positionCard(el: HTMLElement): void {
-  const rect = el.getBoundingClientRect();
-  const cardEl = card!;
-
-  // Position card below or above target depending on space
-  const spaceBelow = window.innerHeight - rect.bottom;
-  if (spaceBelow > 200) {
-    cardEl.style.top = `${rect.bottom + 16}px`;
-    cardEl.style.bottom = 'auto';
-  } else {
-    cardEl.style.top = 'auto';
-    cardEl.style.bottom = `${window.innerHeight - rect.top + 16}px`;
-  }
-
-  // Center horizontally relative to target, clamped to viewport
-  const centerX = rect.left + rect.width / 2;
-  const cardWidth = 320;
-  const left = Math.max(16, Math.min(centerX - cardWidth / 2, window.innerWidth - cardWidth - 16));
-  cardEl.style.left = `${left}px`;
-}
-
-function renderStep(): void {
-  const step = STEPS[currentStep];
-  const target = document.querySelector<HTMLElement>(step.target);
-  if (!target) return;
-
-  positionSpotlight(target);
-  positionCard(target);
-
-  card!.innerHTML = `
-    <div class="onboarding-step-counter">Step ${currentStep + 1} of ${STEPS.length}</div>
-    <h3 class="onboarding-title">${step.title}</h3>
-    <p class="onboarding-message">${step.message}</p>
-    <div class="onboarding-actions">
-      <button class="onboarding-skip" type="button">Skip</button>
-      <button class="onboarding-next" type="button">
-        ${currentStep < STEPS.length - 1 ? 'Next' : 'Done'}
-      </button>
-    </div>
+  // Step B: Show "tap to begin" overlay inside scene container
+  const startOverlay = document.createElement('div');
+  startOverlay.id = 'ob-start';
+  startOverlay.innerHTML = `
+    <p>Put on your headphones</p>
+    <button type="button">Tap to begin</button>
   `;
+  sceneContainer.appendChild(startOverlay);
 
-  card!.querySelector('.onboarding-skip')!.addEventListener('click', close);
-  card!.querySelector('.onboarding-next')!.addEventListener('click', next);
-}
+  // Step C: Init face tracker in parallel (while overlay is visible)
+  const trackingVideo = document.querySelector<HTMLVideoElement>('#tracking-video')!;
+  const tracker = new FaceTracker(trackingVideo, (result) => {
+    scene.setHeadRotation(-result.yawDeg, -result.pitchDeg);
+    scene.setBlendShapes(result.blendShapes);
+  });
+  void tracker.init();
 
-function next(): void {
-  currentStep++;
-  if (currentStep >= STEPS.length) {
-    close();
-  } else {
-    renderStep();
-  }
-}
+  // Step D: Pre-load all 5 voiceover MP3s (parallel with model loading + user tap)
+  const voiceoverPromise = Promise.all(
+    [1, 2, 3, 4, 5].map(async (i) => {
+      const res = await fetch(`./onboarding/en/${i}.mp3`);
+      const ab = await res.arrayBuffer();
+      return engine.audioCtx.decodeAudioData(ab);
+    }),
+  );
 
-function close(): void {
-  localStorage.setItem(STORAGE_KEY, '1');
-  overlay?.remove();
-  overlay = null;
-  spotlight = null;
-  card = null;
-  currentStep = 0;
-}
+  // Step E: Wait for user click (required user gesture → unblocks AudioContext)
+  const startBtn = startOverlay.querySelector<HTMLButtonElement>('button')!;
+  const clickPromise = new Promise<void>((resolve) => {
+    startBtn.addEventListener('click', () => resolve(), { once: true });
+  });
 
-export function maybeShowOnboarding(): void {
-  if (localStorage.getItem(STORAGE_KEY)) return;
+  void (async () => {
+    await clickPromise;
 
-  createElements();
-  renderStep();
+    // Step F: Start camera and remove overlay
+    await tracker.start().catch(() => { /* camera denied: continue without tracking */ });
+    startOverlay.remove();
+
+    const voiceovers = await voiceoverPromise;
+
+    // Step G: Play segments sequentially
+    for (let i = 0; i < SEGMENTS.length; i++) {
+      const seg = SEGMENTS[i];
+      const buffer = voiceovers[i];
+      engine.setMode(seg.mode);
+
+      const start = performance.now();
+      let rafId: number;
+      const animate = () => {
+        const elapsed = performance.now() - start;
+        const { az, el } = seg.animFn(elapsed, buffer.duration * 1000);
+        engine.setAzimuth(az);
+        engine.setElevation(el);
+        scene.setSourcePosition(az, el);
+        rafId = requestAnimationFrame(animate);
+      };
+      rafId = requestAnimationFrame(animate);
+
+      await engine.playBuffer(buffer);
+      cancelAnimationFrame(rafId);
+
+      if (i < SEGMENTS.length - 1) await sleep(2000);
+    }
+
+    // Step H: Onboarding complete
+    tracker.stop();
+    localStorage.setItem(STORAGE_KEY, '1');
+    sceneContainer.classList.remove('ob-fullscreen');
+    show(controlsEl);
+    show(plotsPanel);
+    show(h1El);
+    show(statusEl);
+  })();
 }

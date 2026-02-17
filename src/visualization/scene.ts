@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { loadHeadModel } from './head-model.ts';
+import { loadHeadModel, type HeadModelApi } from './head-model.ts';
 import { buildSourceSphere } from './source-model.ts';
 import { buildDirectionLine, updateDirectionLine } from './direction-line.ts';
 
@@ -25,7 +25,7 @@ export class SceneManager {
   private head: THREE.Group;
   private animationId: number = 0;
   private resizeObserver: ResizeObserver;
-  private headAnim: { stop: () => void };
+  private headAnim: HeadModelApi;
 
   constructor(container: HTMLElement) {
     // Scene
@@ -34,7 +34,7 @@ export class SceneManager {
 
     // Camera — 3/4 elevated view
     this.camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-    this.camera.position.set(0, 2, -4.5);
+    this.camera.position.set(0, 0, -4.5);
     this.camera.lookAt(0, 0, 0);
 
     // Renderer
@@ -88,6 +88,14 @@ export class SceneManager {
   setHeadRotation(yawDeg: number, pitchDeg: number = 0): void {
     this.head.rotation.y = yawDeg * DEG2RAD;
     this.head.rotation.x = pitchDeg * DEG2RAD;
+  }
+
+  setBlendShapes(map: Record<string, number>): void {
+    this.headAnim.applyBlendShapes(map);
+  }
+
+  resumeIdleBlink(): void {
+    this.headAnim.resumeIdleBlink();
   }
 
   dispose(): void {

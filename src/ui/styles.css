@@ -337,84 +337,54 @@ label {
   opacity: 1;
 }
 
-/* Onboarding */
-.onboarding-overlay {
+/* Onboarding: hide non-scene elements */
+.ob-hide {
+  display: none !important;
+}
+
+/* Onboarding: scene fills viewport */
+.ob-fullscreen {
   position: fixed;
   inset: 0;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.65);
+  z-index: 500;
+  aspect-ratio: unset;
+  border-radius: 0;
 }
 
-.onboarding-spotlight {
-  position: fixed;
-  border-radius: 8px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
-  transition: left 0.35s ease, top 0.35s ease, width 0.35s ease, height 0.35s ease;
-  z-index: 1001;
-}
-
-.onboarding-card {
-  position: fixed;
-  width: 320px;
-  padding: 1.25rem;
-  border-radius: 10px;
-  background: #16213e;
-  border: 1px solid #00d4ff33;
-  color: #e0e0e0;
-  z-index: 1002;
-  transition: left 0.35s ease, top 0.35s ease, bottom 0.35s ease;
-}
-
-.onboarding-step-counter {
-  font-size: 0.75rem;
-  color: #aaa;
-  margin-bottom: 0.25rem;
-}
-
-.onboarding-title {
-  font-size: 1rem;
-  color: #00d4ff;
-  margin-bottom: 0.5rem;
-}
-
-.onboarding-message {
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
-}
-
-.onboarding-actions {
+/* Tap-to-start overlay */
+#ob-start {
+  position: absolute;
+  inset: 0;
   display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  z-index: 10;
+  background: rgba(26, 26, 46, 0.6);
+  color: #e0e0e0;
+  text-align: center;
+  padding: 2rem;
 }
 
-.onboarding-skip {
-  padding: 0.4rem 0.75rem;
-  border: 1px solid #333;
-  border-radius: 6px;
-  background: transparent;
+#ob-start p {
+  font-size: 1.1rem;
   color: #aaa;
-  cursor: pointer;
-  font-size: 0.85rem;
+  letter-spacing: 0.04em;
 }
 
-.onboarding-next {
-  padding: 0.4rem 1rem;
-  border: none;
-  border-radius: 6px;
+#ob-start button {
+  padding: 0.9rem 2.5rem;
+  font-size: 1.1rem;
+  border: 2px solid #00d4ff;
+  border-radius: 12px;
+  background: transparent;
+  color: #00d4ff;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+#ob-start button:hover {
   background: #00d4ff;
   color: #1a1a2e;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.onboarding-skip:hover {
-  background: #0f3460;
-  color: #e0e0e0;
-}
-
-.onboarding-next:hover {
-  background: #33dfff;
 }
