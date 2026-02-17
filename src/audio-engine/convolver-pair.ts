@@ -1,4 +1,4 @@
-const CROSSFADE_MS = 25;
+const CROSSFADE_MS = 50;
 
 export class ConvolverPair {
   private convA: ConvolverNode;
@@ -6,6 +6,8 @@ export class ConvolverPair {
   private gainA: GainNode;
   private gainB: GainNode;
   private activeIsA = true;
+  private fadeEndTime = 0;
+  private pendingBuffer: AudioBuffer | null = null;
 
   readonly input: GainNode;
   readonly output: GainNode;
@@ -32,19 +34,41 @@ export class ConvolverPair {
   }
 
   setBuffer(buffer: AudioBuffer): void {
+    if (this.ctx.currentTime < this.fadeEndTime) {
+      this.pendingBuffer = buffer;
+      return;
+    }
+    this.applyBuffer(buffer);
+  }
+
+  private applyBuffer(buffer: AudioBuffer): void {
     const now = this.ctx.currentTime;
     const fadeEnd = now + CROSSFADE_MS / 1000;
+    this.fadeEndTime = fadeEnd;
 
     if (this.activeIsA) {
       this.convB.buffer = buffer;
+      this.gainA.gain.cancelAndHoldAtTime(now);
+      this.gainB.gain.cancelAndHoldAtTime(now);
       this.gainA.gain.linearRampToValueAtTime(0, fadeEnd);
       this.gainB.gain.linearRampToValueAtTime(1, fadeEnd);
     } else {
       this.convA.buffer = buffer;
+      this.gainA.gain.cancelAndHoldAtTime(now);
+      this.gainB.gain.cancelAndHoldAtTime(now);
       this.gainB.gain.linearRampToValueAtTime(0, fadeEnd);
       this.gainA.gain.linearRampToValueAtTime(1, fadeEnd);
     }
     this.activeIsA = !this.activeIsA;
+
+    const msRemaining = (fadeEnd - this.ctx.currentTime) * 1000;
+    setTimeout(() => {
+      if (this.pendingBuffer !== null) {
+        const pending = this.pendingBuffer;
+        this.pendingBuffer = null;
+        this.applyBuffer(pending);
+      }
+    }, msRemaining + 10);
   }
 
   disconnect(): void {

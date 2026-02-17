@@ -35,6 +35,7 @@ export class AudioEngine {
   private stereoPanner!: StereoPannerNode;
   private convolverPair!: ConvolverPair;
   private hrirDataset: HrirDataset | null = null;
+  private currentHrirEntry: HrirEntry | null = null;
 
   private _mode: AudioMode = AudioMode.Mono;
   private _azimuth = 0;
@@ -89,6 +90,7 @@ export class AudioEngine {
   private async loadSubjectData(subject: SubjectInfo): Promise<void> {
     const url = `${this.hrirBaseUrl}/${subject.file}`;
     this.hrirDataset = await loadHrirDataset(url);
+    this.currentHrirEntry = null;
     this.updateHrir();
   }
 
@@ -107,8 +109,13 @@ export class AudioEngine {
     }
     this.updatingHrir = true;
     const entry = findClosestEntry(this.hrirDataset, this._azimuth, this._elevation);
-    const irBuffer = await createStereoBuffer(this.ctx, entry, this.hrirDataset.sampleRate);
-    this.convolverPair.setBuffer(irBuffer);
+
+    if (entry !== this.currentHrirEntry) {
+      this.currentHrirEntry = entry;
+      const irBuffer = await createStereoBuffer(this.ctx, entry, this.hrirDataset.sampleRate);
+      this.convolverPair.setBuffer(irBuffer);
+    }
+
     this.updatingHrir = false;
     if (this.hrirDirty) {
       this.hrirDirty = false;
