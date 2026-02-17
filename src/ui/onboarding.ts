@@ -139,9 +139,11 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
         rafId = requestAnimationFrame(animate);
       };
       rafId = requestAnimationFrame(animate);
+      scene.setPlaying(true);
 
       await Promise.race([engine.playBuffer(buffer), skipPromise]);
       cancelAnimationFrame(rafId);
+      scene.setPlaying(false);
       if (skipped) { engine.stopBuffer(); break; }
 
       if (i < SEGMENTS.length - 1) {
