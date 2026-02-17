@@ -33,11 +33,10 @@ export class PlotsPanel {
   }
 
   update(): void {
-    const entry = this.engine.getCurrentHrirEntry();
-    if (!entry) return;
-
+    const data = this.engine.getPlotData();
+    if (!data) return;
     const sr = this.engine.getSampleRate();
-    this.irChart.update(entry.left, entry.right, sr);
-    this.spectrumChart.update(entry.left, entry.right, sr);
+    this.irChart.update(data.left, data.right, sr);
+    this.spectrumChart.update(data.left, data.right, sr);
   }
 }

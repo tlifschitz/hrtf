@@ -125,6 +125,7 @@ export function initControls(
   modeRadios.forEach((radio) => {
     radio.addEventListener('change', () => {
       engine.setMode(radio.value as AudioMode);
+      plotsPanel.update();
     });
   });
 

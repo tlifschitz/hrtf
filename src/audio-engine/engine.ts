@@ -252,6 +252,32 @@ export class AudioEngine {
     return findClosestEntry(this.hrirDataset, this._azimuth, this._elevation);
   }
 
+  getPlotData(): { left: number[]; right: number[] } | null {
+    if (!this.hrirDataset) return null;
+    const entry = findClosestEntry(this.hrirDataset, this._azimuth, this._elevation);
+
+    if (this._mode === AudioMode.Binaural) {
+      return { left: entry.left, right: entry.right };
+    }
+
+    const n = entry.left.length;
+
+    if (this._mode === AudioMode.Mono) {
+      const ir = new Array(n).fill(0);
+      ir[0] = 1/Math.sqrt(2);
+      return { left: ir, right: [...ir] };
+    }
+
+    // Stereo: replicate Web Audio StereoPannerNode equal-power law
+    const pan = this._azimuth / 80;       // [-1, 1], matches stereoPanner.pan.value
+    const x   = (pan + 1) / 2;            // [0, 1]
+    const leftIr  = new Array(n).fill(0);
+    const rightIr = new Array(n).fill(0);
+    leftIr[0]  = Math.cos(x * Math.PI / 2);
+    rightIr[0] = Math.sin(x * Math.PI / 2);
+    return { left: leftIr, right: rightIr };
+  }
+
   getSampleRate(): number {
     return this.hrirDataset?.sampleRate ?? 0;
   }
