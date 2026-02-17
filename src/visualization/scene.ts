@@ -33,7 +33,7 @@ export class SceneManager {
 
     // Camera — 3/4 elevated view
     this.camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-    this.camera.position.set(0, 2, 4.5);
+    this.camera.position.set(0, 2, -4.5);
     this.camera.lookAt(0, 0, 0);
 
     // Renderer
@@ -45,7 +45,7 @@ export class SceneManager {
     // Lights
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(5, 5, 5);
+    dirLight.position.set(5, 5, -5);
     this.scene.add(dirLight);
 
     // Objects
@@ -83,7 +83,7 @@ export class SceneManager {
   }
 
   setHeadRotation(yawDeg: number, pitchDeg: number = 0): void {
-    this.head.rotation.y = -yawDeg * DEG2RAD;
+    this.head.rotation.y = yawDeg * DEG2RAD;
     this.head.rotation.x = pitchDeg * DEG2RAD;
   }
 
