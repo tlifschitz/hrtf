@@ -59,18 +59,6 @@ h1 {
   color: #00d4ff;
 }
 
-#status {
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 1.5rem;
-  border-radius: 6px;
-  background: #16213e;
-  font-size: 0.9rem;
-}
-
-#status.error {
-  color: #ff6b6b;
-}
-
 .hidden {
   display: none !important;
 }

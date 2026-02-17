@@ -55,8 +55,7 @@ export function initControls(
     engine,
   );
 
-  function updateStatus(status: EngineStatus, detail?: string): void {
-
+  function updateStatus(status: EngineStatus): void {
     if (status === 'ready' || status === 'playing') {
       if (controlsEl.classList.contains('hidden')) {
         fadeIn(controlsEl);

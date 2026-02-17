@@ -64,14 +64,10 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
   // Step A: Hide non-scene UI immediately (synchronous, before any paint)
   const controlsEl = document.querySelector<HTMLElement>('#controls')!;
   const plotsPanel = document.querySelector<HTMLElement>('#plots-panel')!;
-  const h1El = document.querySelector<HTMLElement>('h1')!;
-  const statusEl = document.querySelector<HTMLElement>('#status')!;
   const sceneContainer = document.querySelector<HTMLElement>('#scene-container')!;
 
   controlsEl.classList.add('hidden');
   plotsPanel.classList.add('ob-hide');
-  h1El.classList.add('ob-hide');
-  statusEl.classList.add('ob-hide');
   // Step B: Show "tap to begin" overlay inside scene container
   const startOverlay = document.createElement('div');
   startOverlay.id = 'ob-start';
@@ -161,7 +157,5 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
     localStorage.setItem(STORAGE_KEY, '1');
     show(controlsEl);
     show(plotsPanel);
-    show(h1El);
-    show(statusEl);
   })();
 }
