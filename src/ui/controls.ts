@@ -179,6 +179,7 @@ export function initControls(
       headYaw = 0;
       headPitch = 0;
       scene.setHeadRotation(0, 0);
+      scene.resumeIdleBlink();
       updateEffectiveAngles();
       return;
     }
@@ -189,11 +190,12 @@ export function initControls(
         trackingBtn.textContent = 'Loading model…';
         trackingBtn.disabled = true;
         tracker = new FaceTracker(trackingVideo, (result) => {
-          headYaw = result.yawDeg;
-          headPitch = result.pitchDeg;
+          headYaw = -result.yawDeg;
+          headPitch = -result.pitchDeg;
           trackingYawEl.textContent = `Yaw: ${Math.round(headYaw)}°`;
           trackingPitchEl.textContent = `Pitch: ${Math.round(headPitch)}°`;
           scene.setHeadRotation(headYaw, headPitch);
+          scene.setBlendShapes(result.blendShapes);
           updateEffectiveAngles();
         });
         await tracker.init();

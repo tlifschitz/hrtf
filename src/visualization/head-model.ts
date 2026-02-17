@@ -44,15 +44,6 @@ function startBlinkLoop(meshes: THREE.SkinnedMesh[]): () => void {
   const CLOSE_DURATION = 80; // ms
   const OPEN_DURATION = 120; // ms
 
-  function setBlendShape(name: string, value: number) {
-    for (const mesh of meshes) {
-      const idx = mesh.morphTargetDictionary![name];
-      if (idx !== undefined && mesh.morphTargetInfluences) {
-        mesh.morphTargetInfluences[idx] = value;
-      }
-    }
-  }
-
   function tick() {
     animId = requestAnimationFrame(tick);
     const now = performance.now();
@@ -64,8 +55,8 @@ function startBlinkLoop(meshes: THREE.SkinnedMesh[]): () => void {
 
     if (blinkPhase === 'closing') {
       const t = Math.min((now - blinkStart) / CLOSE_DURATION, 1);
-      setBlendShape('eyeBlinkLeft', t);
-      setBlendShape('eyeBlinkRight', t);
+      setBlendShape(meshes, 'eyeBlinkLeft', t);
+      setBlendShape(meshes, 'eyeBlinkRight', t);
       if (t >= 1) {
         blinkPhase = 'opening';
         blinkStart = now;
@@ -74,8 +65,8 @@ function startBlinkLoop(meshes: THREE.SkinnedMesh[]): () => void {
 
     if (blinkPhase === 'opening') {
       const t = Math.min((now - blinkStart) / OPEN_DURATION, 1);
-      setBlendShape('eyeBlinkLeft', 1 - t);
-      setBlendShape('eyeBlinkRight', 1 - t);
+      setBlendShape(meshes, 'eyeBlinkLeft', 1 - t);
+      setBlendShape(meshes, 'eyeBlinkRight', 1 - t);
       if (t >= 1) {
         blinkPhase = 'idle';
         nextBlinkTime = now + 2000 + Math.random() * 4000;
@@ -87,16 +78,34 @@ function startBlinkLoop(meshes: THREE.SkinnedMesh[]): () => void {
   return () => cancelAnimationFrame(animId);
 }
 
+/** Set a single blend shape across all morph meshes */
+function setBlendShape(meshes: THREE.SkinnedMesh[], name: string, value: number) {
+  for (const mesh of meshes) {
+    const idx = mesh.morphTargetDictionary![name];
+    if (idx !== undefined && mesh.morphTargetInfluences) {
+      mesh.morphTargetInfluences[idx] = value;
+    }
+  }
+}
+
+export interface HeadModelApi {
+  stop: () => void;
+  applyBlendShapes: (map: Record<string, number>) => void;
+  resumeIdleBlink: () => void;
+}
+
 /**
  * Load a Ready Player Me avatar GLB into the given group.
  * Shows a wireframe placeholder while loading; replaces it once ready.
- * Returns a dispose function to stop idle animations.
+ * Returns an API object with stop() and applyBlendShapes().
  */
-export function loadHeadModel(group: THREE.Group): { stop: () => void } {
+export function loadHeadModel(group: THREE.Group): HeadModelApi {
   const placeholder = buildPlaceholder();
   group.add(placeholder);
 
   let stopBlink: (() => void) | null = null;
+  let morphMeshes: THREE.SkinnedMesh[] = [];
+  let blinkSuppressed = false;
 
   const loader = new GLTFLoader();
   loader.load(
@@ -154,11 +163,12 @@ export function loadHeadModel(group: THREE.Group): { stop: () => void } {
         }
       });
 
-      // RPM avatars face +Z by default, which matches our convention
+      // Rotate 180° so the face points toward the camera (which is on -Z)
+      model.rotation.y = Math.PI;
       group.add(model);
 
       // Start idle blink animation
-      const morphMeshes = findMorphMeshes(model);
+      morphMeshes = findMorphMeshes(model);
       if (morphMeshes.length > 0) {
         stopBlink = startBlinkLoop(morphMeshes);
       }
@@ -171,5 +181,25 @@ export function loadHeadModel(group: THREE.Group): { stop: () => void } {
 
   return {
     stop: () => stopBlink?.(),
+    applyBlendShapes: (map: Record<string, number>) => {
+      if (morphMeshes.length === 0) return;
+
+      // Suppress idle blink while tracking provides blend shapes
+      if (!blinkSuppressed && stopBlink) {
+        stopBlink();
+        stopBlink = null;
+        blinkSuppressed = true;
+      }
+
+      for (const [name, value] of Object.entries(map)) {
+        setBlendShape(morphMeshes, name, value);
+      }
+    },
+    resumeIdleBlink: () => {
+      if (blinkSuppressed && morphMeshes.length > 0) {
+        stopBlink = startBlinkLoop(morphMeshes);
+        blinkSuppressed = false;
+      }
+    },
   };
 }

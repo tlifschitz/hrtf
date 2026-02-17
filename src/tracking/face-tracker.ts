@@ -3,6 +3,7 @@ import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 export interface TrackingResult {
   yawDeg: number;
   pitchDeg: number;
+  blendShapes: Record<string, number>;
 }
 
 export type TrackingCallback = (result: TrackingResult) => void;
@@ -37,6 +38,7 @@ export class FaceTracker {
       },
       runningMode: 'VIDEO',
       outputFacialTransformationMatrixes: true,
+      outputFaceBlendshapes: true,
       numFaces: 1,
     });
   }
@@ -91,9 +93,19 @@ export class FaceTracker {
         this.smoothedYaw = SMOOTHING_ALPHA * rawYaw + (1 - SMOOTHING_ALPHA) * this.smoothedYaw;
         this.smoothedPitch = SMOOTHING_ALPHA * rawPitch + (1 - SMOOTHING_ALPHA) * this.smoothedPitch;
 
+        // Extract blend shapes into a name→value map
+        const blendShapes: Record<string, number> = {};
+        const categories = result.faceBlendshapes?.[0]?.categories;
+        if (categories) {
+          for (const cat of categories) {
+            blendShapes[cat.categoryName] = cat.score;
+          }
+        }
+
         this.onResult({
           yawDeg: this.smoothedYaw,
           pitchDeg: this.smoothedPitch,
+          blendShapes,
         });
       }
     }
