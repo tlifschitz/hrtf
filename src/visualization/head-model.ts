@@ -113,17 +113,46 @@ export function loadHeadModel(group: THREE.Group): { stop: () => void } {
 
       const model = gltf.scene;
 
-      // Fit model to ~1 unit tall, centered at origin
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 1.0 / maxDim;
+      // Determine clip height from Neck bone to hide the body
+      let clipModelY = 0;
+      model.traverse((child) => {
+        if (child instanceof THREE.Bone && child.name === 'Neck') {
+          const wp = new THREE.Vector3();
+          child.getWorldPosition(wp);
+          clipModelY = wp.y*1.05;
+        }
+      });
+
+      // Fallback: clip at 80% of model height if no Neck bone found
+      const fullBox = new THREE.Box3().setFromObject(model);
+      if (clipModelY === 0) {
+        clipModelY = fullBox.min.y + (fullBox.max.y - fullBox.min.y) * 0.9;
+      }
+
+      // Scale and center based on head-only bounding box (above neck)
+      const headBox = fullBox.clone();
+      headBox.min.y = clipModelY;
+      const headSize = headBox.getSize(new THREE.Vector3());
+      const maxDim = Math.max(headSize.x, headSize.y, headSize.z);
+      const scale = 5.0 / maxDim;
       model.scale.setScalar(scale);
 
-      // Re-center after scaling
-      const scaledBox = new THREE.Box3().setFromObject(model);
-      const center = scaledBox.getCenter(new THREE.Vector3());
+      // Re-center on the head portion after scaling
+      const scaledHeadBox = new THREE.Box3(
+        headBox.min.clone().multiplyScalar(scale),
+        headBox.max.clone().multiplyScalar(scale),
+      );
+      const center = scaledHeadBox.getCenter(new THREE.Vector3());
       model.position.sub(center);
+
+      // Apply clipping plane in world space (after scale + center transforms)
+      const worldClipY = clipModelY * scale - center.y;
+      const clipPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -worldClipY);
+      model.traverse((child) => {
+        if (child instanceof THREE.Mesh || child instanceof THREE.SkinnedMesh) {
+          child.material.clippingPlanes = [clipPlane];
+        }
+      });
 
       // RPM avatars face +Z by default, which matches our convention
       group.add(model);
