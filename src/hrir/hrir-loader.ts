@@ -17,8 +17,8 @@ export function findClosestEntry(
   azimuth: number,
   elevation: number,
 ): HrirEntry {
-  // Normalize azimuth to 0-360 range to match dataset convention
-  const normAz = ((azimuth % 360) + 360) % 360;
+  // Negate and normalize: UI uses positive=right, SOFA uses 90°=left/270°=right
+  const normAz = ((-azimuth % 360) + 360) % 360;
 
   let closest = dataset.entries[0];
   let minDist = angularDistance(closest.azimuth, closest.elevation, normAz, elevation);
