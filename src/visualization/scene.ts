@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildHeadGroup } from './head-model.ts';
+import { loadHeadModel } from './head-model.ts';
 import { buildSourceSphere } from './source-model.ts';
 import { buildDirectionLine, updateDirectionLine } from './direction-line.ts';
 
@@ -25,6 +25,7 @@ export class SceneManager {
   private head: THREE.Group;
   private animationId: number = 0;
   private resizeObserver: ResizeObserver;
+  private headAnim: { stop: () => void };
 
   constructor(container: HTMLElement) {
     // Scene
@@ -49,7 +50,8 @@ export class SceneManager {
     this.scene.add(dirLight);
 
     // Objects
-    this.head = buildHeadGroup();
+    this.head = new THREE.Group();
+    this.headAnim = loadHeadModel(this.head);
     this.scene.add(this.head);
 
     this.source = buildSourceSphere();
@@ -88,6 +90,7 @@ export class SceneManager {
   }
 
   dispose(): void {
+    this.headAnim.stop();
     cancelAnimationFrame(this.animationId);
     this.resizeObserver.disconnect();
     this.renderer.dispose();
