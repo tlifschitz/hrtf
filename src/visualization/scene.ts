@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { loadHeadModel, type HeadModelApi } from './head-model.ts';
 import { buildSourceSphere } from './source-model.ts';
-import { buildDirectionLine, updateDirectionLine } from './direction-line.ts';
+import { SoundWaveAnimation } from './sound-waves.ts';
 
 const ORBIT_RADIUS = 2.0;
 const DEG2RAD = Math.PI / 180;
@@ -21,7 +21,7 @@ export class SceneManager {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private source: THREE.Group;
-  private directionLine: THREE.Line;
+  private soundWaves: SoundWaveAnimation;
   private head: THREE.Group;
   private animationId: number = 0;
   private resizeObserver: ResizeObserver;
@@ -58,8 +58,8 @@ export class SceneManager {
     this.source = buildSourceSphere();
     this.scene.add(this.source);
 
-    this.directionLine = buildDirectionLine();
-    this.scene.add(this.directionLine);
+    this.soundWaves = new SoundWaveAnimation();
+    this.scene.add(this.soundWaves.group);
 
     // Resize
     this.resizeObserver = new ResizeObserver(() => {
@@ -74,6 +74,7 @@ export class SceneManager {
     // Render loop
     const animate = () => {
       this.animationId = requestAnimationFrame(animate);
+      this.soundWaves.update();
       this.renderer.render(this.scene, this.camera);
     };
     animate();
@@ -82,7 +83,11 @@ export class SceneManager {
   setSourcePosition(azimuthDeg: number, elevationDeg: number): void {
     const pos = sphericalToCartesian(azimuthDeg, elevationDeg, ORBIT_RADIUS);
     this.source.position.copy(pos);
-    updateDirectionLine(this.directionLine, pos);
+    this.soundWaves.setSourcePosition(pos);
+  }
+
+  setPlaying(playing: boolean): void {
+    this.soundWaves.setPlaying(playing);
   }
 
   setHeadRotation(yawDeg: number, pitchDeg: number = 0): void {

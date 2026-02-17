@@ -122,10 +122,12 @@ export function initControls(
       engine.stop();
       playBtn.textContent = '▶ Play';
       playBtn.classList.remove('playing');
+      scene.setPlaying(false);
     } else {
       engine.play();
       playBtn.textContent = '⏹ Stop';
       playBtn.classList.add('playing');
+      scene.setPlaying(true);
     }
   });
 
