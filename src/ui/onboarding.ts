@@ -1,6 +1,7 @@
 import { AudioEngine } from '../audio-engine/engine.ts';
 import { AudioMode } from '../audio-engine/modes.ts';
 import { FaceTracker } from '../tracking/index.ts';
+import { trackEvent } from '../analytics.ts';
 import type { SceneManager } from '../visualization/index.ts';
 
 const STORAGE_KEY = 'hrtf-lab-onboarding-seen';
@@ -97,7 +98,10 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
   // Step E: Wait for user click (required user gesture → unblocks AudioContext)
   const startBtn = startOverlay.querySelector<HTMLButtonElement>('button')!;
   const clickPromise = new Promise<void>((resolve) => {
-    startBtn.addEventListener('click', () => resolve(), { once: true });
+    startBtn.addEventListener('click', () => {
+      trackEvent('onboarding_started');
+      resolve();
+    }, { once: true });
   });
 
   void (async () => {
@@ -109,6 +113,7 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
 
     // Add discrete skip button
     let skipped = false;
+    let currentSegment = 0;
     let skipResolve!: () => void;
     const skipPromise = new Promise<void>((r) => {
       skipResolve = () => { skipped = true; r(); };
@@ -117,16 +122,21 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
     skipBtn.id = 'ob-skip';
     skipBtn.type = 'button';
     skipBtn.textContent = 'Skip';
-    skipBtn.addEventListener('click', () => skipResolve(), { once: true });
+    skipBtn.addEventListener('click', () => {
+      trackEvent('onboarding_skipped', { at_segment: currentSegment + 1 });
+      skipResolve();
+    }, { once: true });
     sceneContainer.appendChild(skipBtn);
 
     const voiceovers = await voiceoverPromise;
 
     // Step G: Play segments sequentially
     for (let i = 0; i < SEGMENTS.length; i++) {
+      currentSegment = i;
       const seg = SEGMENTS[i];
       const buffer = voiceovers[i];
       engine.setMode(seg.mode);
+      trackEvent('onboarding_segment', { segment: i + 1, mode: seg.mode });
 
       const start = performance.now();
       let rafId: number;
@@ -153,6 +163,7 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
     }
 
     skipBtn.remove();
+    if (!skipped) trackEvent('onboarding_completed');
 
     // Step H: Onboarding complete
     tracker.stop();

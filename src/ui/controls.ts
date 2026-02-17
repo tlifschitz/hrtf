@@ -2,6 +2,7 @@ import { AudioEngine, AUDIO_SOURCES } from '../audio-engine/engine.ts';
 import { AudioMode } from '../audio-engine/modes.ts';
 import { FaceTracker } from '../tracking/index.ts';
 import { PlotsPanel } from '../plots/index.ts';
+import { trackEvent } from '../analytics.ts';
 import type { EngineStatus } from '../audio-engine/engine.ts';
 import type { SubjectInfo } from '../hrir/types.ts';
 import type { SceneManager } from '../visualization/index.ts';
@@ -49,6 +50,10 @@ export function initControls(
 
   let tracker: FaceTracker | null = null;
   let trackingActive = false;
+  let currentMode: string = AudioMode.Binaural;
+
+  // Debounce timer for position_set event
+  let positionDebounce: ReturnType<typeof setTimeout> | null = null;
 
   const plotsPanel = new PlotsPanel(
     $<HTMLElement>('#plots-panel'),
@@ -113,32 +118,51 @@ export function initControls(
       playBtn.textContent = '▶ Play';
       playBtn.classList.remove('playing');
       scene.setPlaying(false);
+      trackEvent('audio_stopped', { source_id: sourceSelect.value, mode: currentMode });
     } else {
       engine.play();
       playBtn.textContent = '⏹ Stop';
       playBtn.classList.add('playing');
       scene.setPlaying(true);
+      trackEvent('audio_played', { source_id: sourceSelect.value, mode: currentMode });
     }
   });
 
   // Mode selector
   modeRadios.forEach((radio) => {
     radio.addEventListener('change', () => {
+      const previousMode = currentMode;
+      currentMode = radio.value;
       engine.setMode(radio.value as AudioMode);
       plotsPanel.update();
+      trackEvent('mode_changed', { mode: currentMode, previous_mode: previousMode });
     });
   });
 
   // Audio source selector
   sourceSelect.addEventListener('change', () => {
     void engine.setSource(sourceSelect.value);
+    trackEvent('source_changed', { source_id: sourceSelect.value });
   });
+
+  function schedulePositionEvent(): void {
+    if (positionDebounce !== null) clearTimeout(positionDebounce);
+    positionDebounce = setTimeout(() => {
+      trackEvent('position_set', {
+        azimuth_deg: sourceAzimuth,
+        elevation_deg: sourceElevation,
+        mode: currentMode,
+      });
+      positionDebounce = null;
+    }, 1000);
+  }
 
   // Azimuth slider
   azimuthSlider.addEventListener('input', () => {
     sourceAzimuth = Number(azimuthSlider.value);
     azimuthValue.textContent = `${sourceAzimuth}°`;
     updateEffectiveAngles();
+    schedulePositionEvent();
   });
 
   // Elevation slider
@@ -146,6 +170,7 @@ export function initControls(
     sourceElevation = Number(elevationSlider.value);
     elevationValue.textContent = `${Math.round(sourceElevation)}°`;
     updateEffectiveAngles();
+    schedulePositionEvent();
   });
 
   // Set initial 3D position
@@ -154,6 +179,7 @@ export function initControls(
   // Subject selector
   subjectSelect.addEventListener('change', () => {
     void engine.setSubject(subjectSelect.value).then(() => plotsPanel.update());
+    trackEvent('subject_changed', { subject_id: subjectSelect.value });
   });
 
   // Head tracking
@@ -201,9 +227,11 @@ export function initControls(
       trackingBtn.classList.add('active');
       fadeIn(trackingVideo);
       fadeIn(trackingStatus);
+      trackEvent('tracking_enabled');
     } catch (err) {
       trackingBtn.disabled = false;
       trackingBtn.textContent = 'Enable Head Tracking';
+      trackEvent('tracking_denied');
     }
   });
 }
