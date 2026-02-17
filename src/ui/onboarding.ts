@@ -72,8 +72,6 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
   plotsPanel.classList.add('ob-hide');
   h1El.classList.add('ob-hide');
   statusEl.classList.add('ob-hide');
-  sceneContainer.classList.add('ob-fullscreen');
-
   // Step B: Show "tap to begin" overlay inside scene container
   const startOverlay = document.createElement('div');
   startOverlay.id = 'ob-start';
@@ -113,6 +111,19 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
     await tracker.start().catch(() => { /* camera denied: continue without tracking */ });
     startOverlay.remove();
 
+    // Add discrete skip button
+    let skipped = false;
+    let skipResolve!: () => void;
+    const skipPromise = new Promise<void>((r) => {
+      skipResolve = () => { skipped = true; r(); };
+    });
+    const skipBtn = document.createElement('button');
+    skipBtn.id = 'ob-skip';
+    skipBtn.type = 'button';
+    skipBtn.textContent = 'Skip';
+    skipBtn.addEventListener('click', () => skipResolve(), { once: true });
+    sceneContainer.appendChild(skipBtn);
+
     const voiceovers = await voiceoverPromise;
 
     // Step G: Play segments sequentially
@@ -133,16 +144,21 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
       };
       rafId = requestAnimationFrame(animate);
 
-      await engine.playBuffer(buffer);
+      await Promise.race([engine.playBuffer(buffer), skipPromise]);
       cancelAnimationFrame(rafId);
+      if (skipped) { engine.stopBuffer(); break; }
 
-      if (i < SEGMENTS.length - 1) await sleep(2000);
+      if (i < SEGMENTS.length - 1) {
+        await Promise.race([sleep(2000), skipPromise]);
+        if (skipped) break;
+      }
     }
+
+    skipBtn.remove();
 
     // Step H: Onboarding complete
     tracker.stop();
     localStorage.setItem(STORAGE_KEY, '1');
-    sceneContainer.classList.remove('ob-fullscreen');
     show(controlsEl);
     show(plotsPanel);
     show(h1El);

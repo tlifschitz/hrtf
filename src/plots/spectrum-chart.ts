@@ -39,6 +39,8 @@ export class SpectrumChart {
             grid: { color: '#333' },
           },
           y: {
+            min: -80,
+            max: -30,
             title: { display: true, text: 'Magnitude (dB)', color: '#aaa' },
             ticks: { color: '#888' },
             grid: { color: '#333' },

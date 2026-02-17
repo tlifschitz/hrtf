@@ -35,7 +35,6 @@ export function initControls(
   const elevationValue = $<HTMLSpanElement>('#elevation-value');
   const subjectSelect = $<HTMLSelectElement>('#subject-select');
   const sourceSelect = $<HTMLSelectElement>('#source-select');
-  const statusEl = $<HTMLDivElement>('#status');
   const controlsEl = $<HTMLDivElement>('#controls');
   const trackingBtn = $<HTMLButtonElement>('#tracking-btn');
   const trackingVideo = $<HTMLVideoElement>('#tracking-video');
@@ -57,14 +56,6 @@ export function initControls(
   );
 
   function updateStatus(status: EngineStatus, detail?: string): void {
-    statusEl.classList.toggle('error', status === 'error');
-    const labels: Record<EngineStatus, string> = {
-      loading: detail ?? 'Loading…',
-      ready: 'Ready',
-      playing: 'Playing',
-      error: `Error: ${detail ?? 'unknown'}`,
-    };
-    statusEl.textContent = labels[status];
 
     if (status === 'ready' || status === 'playing') {
       if (controlsEl.classList.contains('hidden')) {
@@ -214,8 +205,6 @@ export function initControls(
       trackingBtn.disabled = false;
       trackingBtn.textContent = 'Enable Head Tracking';
       const msg = err instanceof Error ? err.message : 'Camera access denied';
-      statusEl.textContent = `Tracking error: ${msg}`;
-      statusEl.classList.add('error');
     }
   });
 }

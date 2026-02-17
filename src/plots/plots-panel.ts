@@ -2,14 +2,10 @@ import type { AudioEngine } from '../audio-engine/engine.ts';
 import { IrChart } from './ir-chart.ts';
 import { SpectrumChart } from './spectrum-chart.ts';
 
-type TabId = 'ir' | 'spectrum';
-
 export class PlotsPanel {
   private engine: AudioEngine;
   private irChart!: IrChart;
   private spectrumChart!: SpectrumChart;
-  private tabs: Map<TabId, HTMLElement> = new Map();
-  private tabBtns: Map<TabId, HTMLButtonElement> = new Map();
 
   constructor(container: HTMLElement, engine: AudioEngine) {
     this.engine = engine;
@@ -17,57 +13,23 @@ export class PlotsPanel {
   }
 
   private buildUI(container: HTMLElement): void {
-    // Tab bar
-    const tabBar = document.createElement('div');
-    tabBar.className = 'edu-tab-bar';
-
-    const tabDefs: { id: TabId; label: string }[] = [
-      { id: 'ir', label: 'IR Plot' },
-      { id: 'spectrum', label: 'Spectrum (FFT)' },
-    ];
-
-    for (const { id, label } of tabDefs) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'edu-tab-btn';
-      btn.textContent = label;
-      btn.addEventListener('click', () => this.switchTab(id));
-      tabBar.appendChild(btn);
-      this.tabBtns.set(id, btn);
-    }
-
-    container.appendChild(tabBar);
-
-    // Tab content panels
-    const irPane = document.createElement('div');
-    irPane.className = 'edu-tab-pane';
+    const irCol = document.createElement('div');
+    irCol.className = 'edu-chart-col';
+    irCol.innerHTML = '<h3>Impulse Response</h3>';
     const irCanvas = document.createElement('canvas');
-    irPane.appendChild(irCanvas);
-    container.appendChild(irPane);
-    this.tabs.set('ir', irPane);
+    irCol.appendChild(irCanvas);
 
-    const spectrumPane = document.createElement('div');
-    spectrumPane.className = 'edu-tab-pane';
-    const spectrumCanvas = document.createElement('canvas');
-    spectrumPane.appendChild(spectrumCanvas);
-    container.appendChild(spectrumPane);
-    this.tabs.set('spectrum', spectrumPane);
+    const specCol = document.createElement('div');
+    specCol.className = 'edu-chart-col';
+    specCol.innerHTML = '<h3>Spectrum (FFT)</h3>';
+    const specCanvas = document.createElement('canvas');
+    specCol.appendChild(specCanvas);
 
-    // Create charts
+    container.appendChild(irCol);
+    container.appendChild(specCol);
+
     this.irChart = new IrChart(irCanvas);
-    this.spectrumChart = new SpectrumChart(spectrumCanvas);
-
-    // Show initial tab
-    this.switchTab('ir');
-  }
-
-  private switchTab(id: TabId): void {
-    for (const [tabId, pane] of this.tabs) {
-      pane.style.display = tabId === id ? 'block' : 'none';
-    }
-    for (const [tabId, btn] of this.tabBtns) {
-      btn.classList.toggle('active', tabId === id);
-    }
+    this.spectrumChart = new SpectrumChart(specCanvas);
   }
 
   update(): void {

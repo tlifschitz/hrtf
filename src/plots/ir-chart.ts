@@ -38,6 +38,8 @@ export class IrChart {
             grid: { color: '#333' },
           },
           y: {
+            min: -1,
+            max: 1,
             title: { display: true, text: 'Amplitude', color: '#aaa' },
             ticks: { color: '#888' },
             grid: { color: '#333' },

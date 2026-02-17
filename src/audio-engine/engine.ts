@@ -41,6 +41,7 @@ export class AudioEngine {
   private _azimuth = 0;
   private _elevation = 0;
   private _playing = false;
+  private bufferSourceNode: AudioBufferSourceNode | null = null;
   private onStatus: StatusCallback = () => {};
   private updatingHrir = false;
   private hrirDirty = false;
@@ -185,16 +186,26 @@ export class AudioEngine {
     return new Promise((resolve) => {
       void this.ctx.resume();
       const node = this.ctx.createBufferSource();
+      this.bufferSourceNode = node;
       node.buffer = buffer;
       node.loop = false;
       node.connect(this.workletNode);
       this.connectGraph();
       node.onended = () => {
         node.disconnect();
+        this.bufferSourceNode = null;
         resolve();
       };
       node.start();
     });
+  }
+
+  stopBuffer(): void {
+    if (!this.bufferSourceNode) return;
+    this.bufferSourceNode.onended = null;
+    this.bufferSourceNode.stop();
+    this.bufferSourceNode.disconnect();
+    this.bufferSourceNode = null;
   }
 
   setMode(mode: AudioMode): void {

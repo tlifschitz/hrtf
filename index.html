@@ -7,13 +7,12 @@
   </head>
   <body>
     <div id="app">
-      <h1>Spatial Audio Demo</h1>
-      <div id="status">Loading…</div>
-
       <main id="layout">
         <section id="scene-container">
           <video id="tracking-video" autoplay playsinline muted class="hidden"></video>
         </section>
+
+        <section id="plots-panel"></section>
 
         <div id="controls" class="hidden">
           <button id="play-btn" type="button">▶ Play</button>
@@ -53,8 +52,6 @@
             </div>
           </div>
         </div>
-
-        <section id="plots-panel"></section>
       </main>
     </div>
     <script type="module" src="/src/main.ts"></script>

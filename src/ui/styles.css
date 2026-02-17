@@ -27,47 +27,19 @@ body {
 }
 
 #layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-areas:
-    "scene"
-    "controls"
-    "plots";
-  gap: 1.5rem;
-}
-
-@media (min-width: 768px) {
-  #layout {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "scene controls"
-      "plots plots";
-  }
-}
-
-@media (min-width: 1024px) {
-  #layout {
-    grid-template-columns: 1.5fr 1fr;
-    grid-template-areas:
-      "scene controls"
-      "scene plots";
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 #scene-container {
-  grid-area: scene;
   position: relative;
-  aspect-ratio: 4 / 3;
+  width: 100%;
+  height: 55vh;
+  min-height: 320px;
   border-radius: 8px;
   background: #16213e;
   overflow: hidden;
-}
-
-@media (min-width: 1024px) {
-  #scene-container {
-    aspect-ratio: auto;
-    min-height: 400px;
-  }
 }
 
 #tracking-video {
@@ -128,10 +100,47 @@ h1 {
 }
 
 #controls {
-  grid-area: controls;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: #16213e;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+#azimuth-group,
+#elevation-group {
+  flex: 1 1 160px;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.4rem;
+}
+
+#source-group,
+#subject-group {
+  flex: 1 1 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+#mode-selector {
+  flex: 0 0 auto;
+}
+
+#play-btn,
+#tracking-btn {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+#tracking-group {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 #play-btn {
@@ -179,13 +188,6 @@ label {
   gap: 0.35rem;
 }
 
-#source-group,
-#subject-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
 #source-select,
 #subject-select {
   width: 100%;
@@ -197,13 +199,6 @@ label {
   color: #e0e0e0;
   cursor: pointer;
   transition: border-color 0.2s, background-color 0.2s;
-}
-
-#azimuth-group,
-#elevation-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
 }
 
 #azimuth-slider,
@@ -247,47 +242,27 @@ label {
 
 /* Plots panel */
 #plots-panel {
-  grid-area: plots;
+  display: flex;
+  gap: 1rem;
+}
+
+.edu-chart-col {
+  flex: 1 1 0;
   background: #16213e;
   border-radius: 8px;
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
-.edu-tab-bar {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.edu-tab-btn {
-  padding: 0.4rem 1rem;
-  font-size: 0.85rem;
-  border: 1px solid #333;
-  border-radius: 6px;
-  background: transparent;
+.edu-chart-col h3 {
+  font-size: 0.8rem;
   color: #aaa;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  margin-bottom: 0.5rem;
 }
 
-.edu-tab-btn:hover {
-  background: #0f3460;
-  color: #e0e0e0;
-}
-
-.edu-tab-btn.active {
-  background: #0f3460;
-  color: #00d4ff;
-  border-color: #00d4ff;
-}
-
-.edu-tab-pane {
-  height: 220px;
-}
-
-.edu-tab-pane canvas {
+.edu-chart-col canvas {
   width: 100% !important;
-  height: 100% !important;
+  height: 180px !important;
+  display: block;
 }
 
 /* Tooltips */
@@ -342,13 +317,26 @@ label {
   display: none !important;
 }
 
-/* Onboarding: scene fills viewport */
-.ob-fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  aspect-ratio: unset;
-  border-radius: 0;
+/* Skip button (shown during onboarding playback) */
+#ob-skip {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 20;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+#ob-skip:hover {
+  color: #e0e0e0;
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.55);
 }
 
 /* Tap-to-start overlay */
