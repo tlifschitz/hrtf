@@ -204,7 +204,6 @@ export function initControls(
     } catch (err) {
       trackingBtn.disabled = false;
       trackingBtn.textContent = 'Enable Head Tracking';
-      const msg = err instanceof Error ? err.message : 'Camera access denied';
     }
   });
 }
