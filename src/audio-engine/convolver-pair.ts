@@ -1,4 +1,4 @@
-const CROSSFADE_MS = 50;
+const CROSSFADE_MS = 80;
 
 export class ConvolverPair {
   private convA: ConvolverNode;
@@ -13,6 +13,21 @@ export class ConvolverPair {
   readonly output: GainNode;
 
   private ctx: AudioContext;
+
+  // Equal-power crossfade curves: sin²(x) + cos²(x) = 1 → constant energy
+  private static readonly FADE_IN_CURVE: Float32Array = (() => {
+    const N = 128;
+    const c = new Float32Array(N);
+    for (let i = 0; i < N; i++) c[i] = Math.sin((i / (N - 1)) * (Math.PI / 2));
+    return c;
+  })();
+
+  private static readonly FADE_OUT_CURVE: Float32Array = (() => {
+    const N = 128;
+    const c = new Float32Array(N);
+    for (let i = 0; i < N; i++) c[i] = Math.cos((i / (N - 1)) * (Math.PI / 2));
+    return c;
+  })();
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
@@ -43,21 +58,42 @@ export class ConvolverPair {
 
   private applyBuffer(buffer: AudioBuffer): void {
     const now = this.ctx.currentTime;
-    const fadeEnd = now + CROSSFADE_MS / 1000;
+    const duration = CROSSFADE_MS / 1000;
+    const fadeEnd = now + duration;
     this.fadeEndTime = fadeEnd;
 
     if (this.activeIsA) {
+      // Read current values before any cancel calls
+      const curA = this.gainA.gain.value;
+
+      // Hard-zero inactive gain before buffer assignment to prevent transient
+      this.gainB.gain.cancelScheduledValues(now);
+      this.gainB.gain.setValueAtTime(0, now);
       this.convB.buffer = buffer;
-      this.gainA.gain.cancelAndHoldAtTime(now);
-      this.gainB.gain.cancelAndHoldAtTime(now);
-      this.gainA.gain.linearRampToValueAtTime(0, fadeEnd);
-      this.gainB.gain.linearRampToValueAtTime(1, fadeEnd);
+
+      // Anchor active gain at current value, then fade out
+      this.gainA.gain.cancelScheduledValues(now);
+      this.gainA.gain.setValueAtTime(curA, now);
+      this.gainA.gain.setValueCurveAtTime(ConvolverPair.FADE_OUT_CURVE, now, duration);
+
+      // Fade in inactive (FADE_IN_CURVE[0] = 0, so no discontinuity from hard-zero above)
+      this.gainB.gain.setValueCurveAtTime(ConvolverPair.FADE_IN_CURVE, now, duration);
     } else {
+      // Read current values before any cancel calls
+      const curB = this.gainB.gain.value;
+
+      // Hard-zero inactive gain before buffer assignment to prevent transient
+      this.gainA.gain.cancelScheduledValues(now);
+      this.gainA.gain.setValueAtTime(0, now);
       this.convA.buffer = buffer;
-      this.gainA.gain.cancelAndHoldAtTime(now);
-      this.gainB.gain.cancelAndHoldAtTime(now);
-      this.gainB.gain.linearRampToValueAtTime(0, fadeEnd);
-      this.gainA.gain.linearRampToValueAtTime(1, fadeEnd);
+
+      // Anchor active gain at current value, then fade out
+      this.gainB.gain.cancelScheduledValues(now);
+      this.gainB.gain.setValueAtTime(curB, now);
+      this.gainB.gain.setValueCurveAtTime(ConvolverPair.FADE_OUT_CURVE, now, duration);
+
+      // Fade in inactive (FADE_IN_CURVE[0] = 0, so no discontinuity from hard-zero above)
+      this.gainA.gain.setValueCurveAtTime(ConvolverPair.FADE_IN_CURVE, now, duration);
     }
     this.activeIsA = !this.activeIsA;
 
@@ -68,7 +104,7 @@ export class ConvolverPair {
         this.pendingBuffer = null;
         this.applyBuffer(pending);
       }
-    }, msRemaining + 10);
+    }, msRemaining + 30);
   }
 
   disconnect(): void {
