@@ -21,7 +21,7 @@ export class PlotsPanel {
 
     const specCol = document.createElement('div');
     specCol.className = 'edu-chart-col';
-    specCol.innerHTML = '<h3>Spectrum (FFT)</h3>';
+    specCol.innerHTML = '<h3>Spectrum</h3>';
     const specCanvas = document.createElement('canvas');
     specCol.appendChild(specCanvas);
 

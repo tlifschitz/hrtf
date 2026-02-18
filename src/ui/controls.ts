@@ -207,7 +207,7 @@ export function initControls(
       // Stop tracking
       tracker?.stop();
       trackingActive = false;
-      trackingBtn.textContent = 'Enable Head Tracking';
+      trackingBtn.dataset.tooltip = 'Enable Head Tracking';
       trackingBtn.classList.remove('active');
       trackingVideo.classList.add('hidden');
       trackingVideo.classList.remove('fade-hidden');
@@ -225,7 +225,7 @@ export function initControls(
     try {
       // Lazy-init tracker on first click
       if (!tracker) {
-        trackingBtn.textContent = 'Loading model…';
+        trackingBtn.dataset.tooltip = 'Loading model…';
         trackingBtn.disabled = true;
         tracker = new FaceTracker(trackingVideo, (result) => {
           headYaw = -result.yawDeg;
@@ -242,14 +242,14 @@ export function initControls(
 
       await tracker.start();
       trackingActive = true;
-      trackingBtn.textContent = 'Disable Head Tracking';
+      trackingBtn.dataset.tooltip = 'Disable Head Tracking';
       trackingBtn.classList.add('active');
       fadeIn(trackingVideo);
       fadeIn(trackingStatus);
       trackEvent('tracking_enabled');
     } catch (err) {
       trackingBtn.disabled = false;
-      trackingBtn.textContent = 'Enable Head Tracking';
+      trackingBtn.dataset.tooltip = 'Enable Head Tracking';
       trackEvent('tracking_denied');
     }
   });

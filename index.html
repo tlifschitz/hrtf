@@ -19,50 +19,58 @@
       <main id="layout">
         <section id="scene-container">
           <video id="tracking-video" autoplay playsinline muted class="hidden"></video>
+
+          <div id="controls" class="hidden">
+            <button id="play-btn" type="button">▶ Play</button>
+
+            <div id="source-group" data-tooltip="Choose the audio signal to spatialize.">
+              <label for="source-select">Audio:</label>
+              <select id="source-select"></select>
+            </div>
+
+            <div id="subject-group" data-tooltip="Different subjects have different ear shapes, producing unique spatial audio.">
+              <label for="subject-select">Subject:</label>
+              <select id="subject-select"></select>
+            </div>
+
+            <div id="mode-group" data-tooltip="Mono: single channel. Stereo: left/right panning. Binaural: full HRTF spatial audio.">
+              <label for="mode-select">Audio mode:</label>
+              <fieldset id="mode-selector">
+                <label><input type="radio" name="mode" value="mono" checked /> Mono</label>
+                <label><input type="radio" name="mode" value="stereo" /> Stereo</label>
+                <label><input type="radio" name="mode" value="binaural" /> Binaural</label>
+              </fieldset>
+            </div>
+
+            <div id="source-position-group">
+              <div id="azimuth-group" data-tooltip="Horizontal angle of the sound source. Negative = left, positive = right.">
+                <label for="azimuth-slider">Azimuth: <span id="azimuth-value">0°</span></label>
+                <input id="azimuth-slider" type="range" min="-90" max="90" value="0" step="1" />
+              </div>
+              <div id="elevation-group" data-tooltip="Vertical angle. 0° = ear level, 90° = directly above.">
+                <label for="elevation-slider">Elevation: <span id="elevation-value">0°</span></label>
+                <input id="elevation-slider" type="range" min="-45" max="90" value="0" step="1" />
+              </div>
+            </div>
+
+            <div id="tracking-group">
+              <button id="tracking-btn" type="button" data-tooltip="Enable Head Tracking">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="8" r="4"/>
+                  <path d="M6 20v-2a6 6 0 0 1 12 0v2"/>
+                </svg>
+              </button>
+              <div id="tracking-status" class="hidden">
+                <span id="tracking-yaw">Yaw: 0°</span>
+                <span id="tracking-pitch">Pitch: 0°</span>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section id="plots-panel"></section>
-
-        <div id="controls" class="hidden">
-          <button id="play-btn" type="button">▶ Play</button>
-
-          <div id="source-group" data-tooltip="Choose the audio signal to spatialize.">
-            <label for="source-select">Audio source:</label>
-            <select id="source-select"></select>
-          </div>
-
-          <div id="subject-group" data-tooltip="Different subjects have different ear shapes, producing unique spatial audio.">
-            <label for="subject-select">HRTF Subject:</label>
-            <select id="subject-select"></select>
-          </div>
-
-          <div id="mode-group" data-tooltip="Mono: single channel. Stereo: left/right panning. Binaural: full HRTF spatial audio.">
-            <label for="mode-select">Audio mode:</label>
-            <fieldset id="mode-selector" >
-              <label><input type="radio" name="mode" value="mono" checked /> Mono</label>
-              <label><input type="radio" name="mode" value="stereo" /> Stereo</label>
-              <label><input type="radio" name="mode" value="binaural" /> Binaural</label>
-            </fieldset>
-          </div>
-
-          <div id="azimuth-group" data-tooltip="Horizontal angle of the sound source. Negative = left, positive = right.">
-            <label for="azimuth-slider">Azimuth: <span id="azimuth-value">0°</span></label>
-            <input id="azimuth-slider" type="range" min="-90" max="90" value="0" step="1" />
-          </div>
-
-          <div id="elevation-group" data-tooltip="Vertical angle. 0° = ear level, 90° = directly above.">
-            <label for="elevation-slider">Elevation: <span id="elevation-value">0°</span></label>
-            <input id="elevation-slider" type="range" min="-45" max="90" value="0" step="1" />
-          </div>
-
-          <div id="tracking-group" data-tooltip="Uses your webcam to track head rotation and adjust audio in real-time.">
-            <button id="tracking-btn" type="button">Enable Head Tracking</button>
-            <div id="tracking-status" class="hidden">
-              <span id="tracking-yaw">Yaw: 0°</span>
-              <span id="tracking-pitch">Pitch: 0°</span>
-            </div>
-          </div>
-        </div>
       </main>
     </div>
     <script type="module" src="/src/main.ts"></script>
