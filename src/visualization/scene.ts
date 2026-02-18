@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { loadHeadModel, type HeadModelApi } from './head-model.ts';
 import { buildSourceSphere } from './source-model.ts';
 import { SoundWaveAnimation } from './sound-waves.ts';
+import { buildFloorGrid } from './floor-grid.ts';
 
 const ORBIT_RADIUS = 2.0;
 const DEG2RAD = Math.PI / 180;
@@ -34,7 +35,7 @@ export class SceneManager {
 
     // Camera — 3/4 elevated view
     this.camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-    this.camera.position.set(0, 0, -4.5);
+    this.camera.position.set(0, 3, -5);
     this.camera.lookAt(0, 0, 0);
 
     // Renderer
@@ -60,6 +61,8 @@ export class SceneManager {
 
     this.soundWaves = new SoundWaveAnimation();
     this.scene.add(this.soundWaves.group);
+
+    this.scene.add(buildFloorGrid());
 
     // Resize
     this.resizeObserver = new ResizeObserver(() => {
