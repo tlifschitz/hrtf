@@ -164,7 +164,7 @@ export function loadHeadModel(group: THREE.Group): HeadModelApi {
       });
 
       // Rotate 180° so the face points toward the camera (which is on -Z)
-      model.rotation.y = Math.PI;
+      //model.rotation.y = Math.PI;
       group.add(model);
 
       // Start idle blink animation

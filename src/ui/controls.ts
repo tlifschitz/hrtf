@@ -213,7 +213,7 @@ export function initControls(
           headPitch = -result.pitchDeg;
           trackingYawEl.textContent = `Yaw: ${Math.round(headYaw)}°`;
           trackingPitchEl.textContent = `Pitch: ${Math.round(headPitch)}°`;
-          scene.setHeadRotation(headYaw, headPitch);
+          scene.setHeadRotation(-headYaw, -headPitch);
           scene.setBlendShapes(result.blendShapes);
           updateEffectiveAngles();
         });
