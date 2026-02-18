@@ -66,8 +66,10 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
   const controlsEl = document.querySelector<HTMLElement>('#controls')!;
   const plotsPanel = document.querySelector<HTMLElement>('#plots-panel')!;
   const sceneContainer = document.querySelector<HTMLElement>('#scene-container')!;
+  const controlsToggleBtn = document.querySelector<HTMLElement>('#controls-toggle')!;
 
   controlsEl.classList.add('hidden');
+  controlsToggleBtn.classList.add('hidden');
   plotsPanel.classList.add('ob-hide');
   // Step B: Show "tap to begin" overlay inside scene container
   const startOverlay = document.createElement('div');
@@ -169,6 +171,7 @@ export function runOnboarding(engine: AudioEngine, scene: SceneManager): void {
     tracker.stop();
     localStorage.setItem(STORAGE_KEY, '1');
     show(controlsEl);
+    show(controlsToggleBtn)
     show(plotsPanel);
   })();
 }
