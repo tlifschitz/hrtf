@@ -110,7 +110,51 @@ h1 {
   flex-wrap: nowrap;
   gap: 0.4rem;
   align-items: center;
+  transition: transform 0.25s ease, opacity 0.2s ease;
 }
+
+#controls.collapsed {
+  transform: translateY(calc(-100% - 16px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Panel collapse toggle buttons */
+.panel-toggle {
+  position: absolute;
+  z-index: 6;
+  background: rgba(15, 25, 50, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: none;
+  border-radius: 6px;
+  color: #e0e0e0;
+  cursor: pointer;
+  padding: 0.25rem 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.panel-toggle:hover {
+  background: rgba(26, 82, 118, 0.85);
+}
+
+.panel-toggle svg {
+  transition: transform 0.25s ease;
+}
+
+.panel-toggle.collapsed svg {
+  transform: rotate(180deg);
+}
+
+#controls-toggle {
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 
 #source-group,
 #subject-group,

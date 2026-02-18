@@ -42,6 +42,7 @@ export function initControls(
   const trackingStatus = $<HTMLDivElement>('#tracking-status');
   const trackingYawEl = $<HTMLSpanElement>('#tracking-yaw');
   const trackingPitchEl = $<HTMLSpanElement>('#tracking-pitch');
+  const controlsToggleBtn = $<HTMLButtonElement>('#controls-toggle');
 
   let sourceAzimuth = 0;
   let sourceElevation = 0;
@@ -64,6 +65,7 @@ export function initControls(
     if (status === 'ready' || status === 'playing') {
       if (controlsEl.classList.contains('hidden')) {
         fadeIn(controlsEl);
+        controlsToggleBtn.classList.remove('hidden');
         onReady?.();
       }
     }
@@ -199,6 +201,13 @@ export function initControls(
   subjectSelect.addEventListener('change', () => {
     void engine.setSubject(subjectSelect.value).then(() => plotsPanel.update());
     trackEvent('subject_changed', { subject_id: subjectSelect.value });
+  });
+
+  // Panel toggles
+  controlsToggleBtn.addEventListener('click', () => {
+    const collapsed = controlsEl.classList.toggle('collapsed');
+    controlsToggleBtn.classList.toggle('collapsed', collapsed);
+    controlsToggleBtn.setAttribute('aria-label', collapsed ? 'Show controls' : 'Hide controls');
   });
 
   // Head tracking
