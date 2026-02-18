@@ -10,7 +10,6 @@ export class SpectrumChart {
     this.chart = new Chart(canvas, {
       type: 'line',
       data: {
-        labels: [],
         datasets: [
           {
             label: 'Left ear',
@@ -34,8 +33,11 @@ export class SpectrumChart {
         animation: false,
         scales: {
           x: {
+            type: 'linear',
+            min: 0,
+            max: 20000,
             title: { display: true, text: 'Frequency (Hz)', color: '#aaa' },
-            ticks: { color: '#888', maxTicksLimit: 10 },
+            ticks: { color: '#888', stepSize: 2500 },
             grid: { color: '#333' },
           },
           y: {
@@ -57,10 +59,10 @@ export class SpectrumChart {
     const leftFFT = computeFFT(left, sampleRate);
     const rightFFT = computeFFT(right, sampleRate);
 
-    const labels = leftFFT.freqBins.map((f) => Math.round(f).toString());
-    this.chart.data.labels = labels;
-    this.chart.data.datasets[0].data = leftFFT.magnitudeDb;
-    this.chart.data.datasets[1].data = rightFFT.magnitudeDb;
+    const toPoints = (fft: typeof leftFFT) =>
+      fft.freqBins.map((x, i) => ({ x, y: fft.magnitudeDb[i] }));
+    this.chart.data.datasets[0].data = toPoints(leftFFT);
+    this.chart.data.datasets[1].data = toPoints(rightFFT);
     this.chart.update();
   }
 }

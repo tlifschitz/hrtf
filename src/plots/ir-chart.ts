@@ -9,7 +9,6 @@ export class IrChart {
     this.chart = new Chart(canvas, {
       type: 'line',
       data: {
-        labels: [],
         datasets: [
           {
             label: 'Left ear',
@@ -33,13 +32,16 @@ export class IrChart {
         animation: false,
         scales: {
           x: {
+            type: 'linear',
+            min: 0,
+            max: 4,
             title: { display: true, text: 'Time (ms)', color: '#aaa' },
-            ticks: { color: '#888', maxTicksLimit: 8 },
+            ticks: { color: '#888', stepSize: 0.5 },
             grid: { color: '#333' },
           },
           y: {
-            min: -1,
-            max: 1,
+            min: -1.5,
+            max: 1.5,
             title: { display: true, text: 'Amplitude', color: '#aaa' },
             ticks: { color: '#888' },
             grid: { color: '#333' },
@@ -53,10 +55,10 @@ export class IrChart {
   }
 
   update(left: number[], right: number[], sampleRate: number): void {
-    const labels = left.map((_, i) => ((i / sampleRate) * 1000).toFixed(2));
-    this.chart.data.labels = labels;
-    this.chart.data.datasets[0].data = left;
-    this.chart.data.datasets[1].data = right;
+    const toPoints = (samples: number[]) =>
+      samples.map((y, i) => ({ x: (i / sampleRate) * 1000, y }));
+    this.chart.data.datasets[0].data = toPoints(left);
+    this.chart.data.datasets[1].data = toPoints(right);
     this.chart.update();
   }
 }
