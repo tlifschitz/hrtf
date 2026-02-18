@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 
-export function buildSourceSphere(): THREE.Group {
+export interface SourceSphereApi {
+  group: THREE.Group;
+  setHovered(active: boolean): void;
+  setDragging(active: boolean): void;
+}
+
+export function buildSourceSphere(): SourceSphereApi {
   const group = new THREE.Group();
 
   // Core sphere
@@ -21,5 +27,14 @@ export function buildSourceSphere(): THREE.Group {
   });
   group.add(new THREE.Mesh(glowGeo, glowMat));
 
-  return group;
+  return {
+    group,
+    setHovered(active: boolean): void {
+      coreMat.emissiveIntensity = active ? 1.2 : 0.5;
+    },
+    setDragging(active: boolean): void {
+      coreMat.emissiveIntensity = active ? 0.8 : 0.5;
+      glowMat.opacity = active ? 0 : 0.15;
+    },
+  };
 }

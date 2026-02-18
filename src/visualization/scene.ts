@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { loadHeadModel, type HeadModelApi } from './head-model.ts';
-import { buildSourceSphere } from './source-model.ts';
+import { buildSourceSphere, type SourceSphereApi } from './source-model.ts';
 import { SoundWaveAnimation } from './sound-waves.ts';
 import { buildFloorGrid } from './floor-grid.ts';
 
 const ORBIT_RADIUS = 2.0;
 const DEG2RAD = Math.PI / 180;
+const RAD2DEG = 180 / Math.PI;
 
 function sphericalToCartesian(azimuthDeg: number, elevationDeg: number, radius: number): THREE.Vector3 {
   const az = azimuthDeg * DEG2RAD;
@@ -22,13 +23,21 @@ export class SceneManager {
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
-  private source: THREE.Group;
+  private sourceApi: SourceSphereApi;
   private soundWaves: SoundWaveAnimation;
   private head: THREE.Group;
   private animationId: number = 0;
   private resizeObserver: ResizeObserver;
   private headAnim: HeadModelApi;
   private controls: OrbitControls;
+
+  private raycaster = new THREE.Raycaster();
+  private constraintSphere = new THREE.Sphere(new THREE.Vector3(), ORBIT_RADIUS);
+  private isDragging = false;
+  private isHovered = false;
+  private onSourceDrag: ((az: number, el: number) => void) | null = null;
+  private _ndcPoint = new THREE.Vector2();
+  private _intersectTarget = new THREE.Vector3();
 
   constructor(container: HTMLElement) {
     // Scene
@@ -67,8 +76,8 @@ export class SceneManager {
     this.headAnim = loadHeadModel(this.head);
     this.scene.add(this.head);
 
-    this.source = buildSourceSphere();
-    this.scene.add(this.source);
+    this.sourceApi = buildSourceSphere();
+    this.scene.add(this.sourceApi.group);
 
     this.soundWaves = new SoundWaveAnimation();
     this.scene.add(this.soundWaves.group);
@@ -97,7 +106,7 @@ export class SceneManager {
 
   setSourcePosition(azimuthDeg: number, elevationDeg: number): void {
     const pos = sphericalToCartesian(azimuthDeg, elevationDeg, ORBIT_RADIUS);
-    this.source.position.copy(pos);
+    this.sourceApi.group.position.copy(pos);
     this.soundWaves.setSourcePosition(pos);
   }
 
@@ -118,11 +127,94 @@ export class SceneManager {
     this.headAnim.resumeIdleBlink();
   }
 
+  setOnSourceDrag(cb: (az: number, el: number) => void): void {
+    this.onSourceDrag = cb;
+    this.attachPointerListeners();
+  }
+
+  private pointerToNDC(e: PointerEvent): THREE.Vector2 {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this._ndcPoint.set(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    return this._ndcPoint;
+  }
+
+  private raycastSource(e: PointerEvent): boolean {
+    this.raycaster.setFromCamera(this.pointerToNDC(e), this.camera);
+    const coreMesh = this.sourceApi.group.children[0] as THREE.Mesh;
+    return this.raycaster.intersectObject(coreMesh).length > 0;
+  }
+
+  private dragPositionFromEvent(e: PointerEvent): { az: number; el: number } | null {
+    this.raycaster.setFromCamera(this.pointerToNDC(e), this.camera);
+    const ray = this.raycaster.ray;
+    const hit = ray.intersectSphere(this.constraintSphere, this._intersectTarget);
+    if (!hit) return null;
+    const { x, y, z } = this._intersectTarget;
+    const el = Math.asin(y / ORBIT_RADIUS) * RAD2DEG;
+    const az = Math.atan2(-x, z) * RAD2DEG;
+    return { az, el };
+  }
+
+  private onPointerDown = (e: PointerEvent) => {
+    if (!this.raycastSource(e)) return;
+    e.stopPropagation();
+    this.renderer.domElement.setPointerCapture(e.pointerId);
+    this.isDragging = true;
+    this.controls.enabled = false;
+    this.renderer.domElement.style.cursor = 'grabbing';
+    this.sourceApi.setHovered(false);
+    this.sourceApi.setDragging(true);
+    const pos = this.dragPositionFromEvent(e);
+    if (pos) this.onSourceDrag?.(pos.az, pos.el);
+  };
+
+  private onPointerMove = (e: PointerEvent) => {
+    if (this.isDragging) {
+      const pos = this.dragPositionFromEvent(e);
+      if (pos) this.onSourceDrag?.(pos.az, pos.el);
+      return;
+    }
+    const hovered = this.raycastSource(e);
+    if (hovered !== this.isHovered) {
+      this.isHovered = hovered;
+      this.sourceApi.setHovered(hovered);
+      this.renderer.domElement.style.cursor = hovered ? 'grab' : '';
+    }
+  };
+
+  private onPointerUp = (e: PointerEvent) => {
+    if (!this.isDragging) return;
+    if (this.renderer.domElement.hasPointerCapture(e.pointerId))
+      this.renderer.domElement.releasePointerCapture(e.pointerId);
+    this.isDragging = false;
+    this.controls.enabled = true;
+    this.renderer.domElement.style.cursor = '';
+    this.sourceApi.setDragging(false);
+    this.isHovered = false;
+    this.sourceApi.setHovered(false);
+  };
+
+  private attachPointerListeners(): void {
+    const el = this.renderer.domElement;
+    el.addEventListener('pointermove', this.onPointerMove);
+    el.addEventListener('pointerdown', this.onPointerDown);
+    window.addEventListener('pointerup', this.onPointerUp);
+    window.addEventListener('pointercancel', this.onPointerUp);
+  }
+
   dispose(): void {
     this.headAnim.stop();
     cancelAnimationFrame(this.animationId);
     this.resizeObserver.disconnect();
     this.controls.dispose();
+    const el = this.renderer.domElement;
+    el.removeEventListener('pointermove', this.onPointerMove);
+    el.removeEventListener('pointerdown', this.onPointerDown);
+    window.removeEventListener('pointerup', this.onPointerUp);
+    window.removeEventListener('pointercancel', this.onPointerUp);
     this.renderer.dispose();
   }
 }

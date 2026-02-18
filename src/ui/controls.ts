@@ -176,6 +176,25 @@ export function initControls(
   // Set initial 3D position
   scene.setSourcePosition(sourceAzimuth, sourceElevation);
 
+  // Drag clamping bounds mirror the slider HTML attributes
+  const AZ_MIN = Number(azimuthSlider.min);
+  const AZ_MAX = Number(azimuthSlider.max);
+  const EL_MIN = Number(elevationSlider.min);
+  const EL_MAX = Number(elevationSlider.max);
+
+  scene.setOnSourceDrag((azDeg: number, elDeg: number) => {
+    sourceAzimuth = Math.max(AZ_MIN, Math.min(AZ_MAX, Math.round(azDeg)));
+    sourceElevation = Math.max(EL_MIN, Math.min(EL_MAX, Math.round(elDeg)));
+
+    azimuthSlider.value = String(sourceAzimuth);
+    azimuthValue.textContent = `${sourceAzimuth}°`;
+    elevationSlider.value = String(sourceElevation);
+    elevationValue.textContent = `${sourceElevation}°`;
+
+    updateEffectiveAngles();
+    schedulePositionEvent();
+  });
+
   // Subject selector
   subjectSelect.addEventListener('change', () => {
     void engine.setSubject(subjectSelect.value).then(() => plotsPanel.update());
