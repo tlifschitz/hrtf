@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { loadHeadModel, type HeadModelApi } from './head-model.ts';
 import { buildSourceSphere } from './source-model.ts';
 import { SoundWaveAnimation } from './sound-waves.ts';
@@ -27,6 +28,7 @@ export class SceneManager {
   private animationId: number = 0;
   private resizeObserver: ResizeObserver;
   private headAnim: HeadModelApi;
+  private controls: OrbitControls;
 
   constructor(container: HTMLElement) {
     // Scene
@@ -44,6 +46,15 @@ export class SceneManager {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(this.renderer.domElement);
+
+    // Orbit controls
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.08;
+    this.controls.target.set(0, 0, 0);
+    this.controls.minDistance = 2;
+    this.controls.maxDistance = 20;
+    this.controls.maxPolarAngle = Math.PI * 0.72;
 
     // Lights
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
@@ -77,6 +88,7 @@ export class SceneManager {
     // Render loop
     const animate = () => {
       this.animationId = requestAnimationFrame(animate);
+      this.controls.update();
       this.soundWaves.update();
       this.renderer.render(this.scene, this.camera);
     };
@@ -110,6 +122,7 @@ export class SceneManager {
     this.headAnim.stop();
     cancelAnimationFrame(this.animationId);
     this.resizeObserver.disconnect();
+    this.controls.dispose();
     this.renderer.dispose();
   }
 }
